@@ -1,60 +1,189 @@
-const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const path = require('path');
-
-app.use(express.static(__dirname));
-
-let users = {};
-let buzzerLocked = false; 
-// كود الغرفة يتغير تلقائياً عند كل تشغيل للسيرفر
-const GAME_ROOM_CODE = Math.floor(1000 + Math.random() * 9000).toString();
-
-io.on('connection', (socket) => {
-    // إرسال الكود للمسؤول فقط
-    socket.emit('adminCode', GAME_ROOM_CODE);
-
-    socket.on('registerUser', (data) => {
-        // التحقق من الكود قبل تسجيل الدخول
-        if (data.code === GAME_ROOM_CODE) {
-            users[socket.id] = { name: data.name, team: data.team };
-            socket.emit('loginSuccess');
-            io.emit('updateUserList', users);
-        } else {
-            socket.emit('loginError', 'كود الغرفة غير صحيح!');
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام المسابقات الذكي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=El+Messiri:wght@700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        /* التنسيقات الأصلية التي أرسلتها أنت */
+        :root {
+            --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
+            --hex-width: 160px; --hex-height: 184px; --hex-gap: 12px;
+            --maroon-team: #cf6679; --orange-team: #ffb74d;
         }
-    });
+        body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
+        #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
+        .admin-btn { width: 100%; padding: 18px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
+        .btn-start { background-color: #00e676; color: #000; }
+        .btn-reset { background-color: #ff1744; color: white; }
+        .teams-container { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+        .team-box { flex: 1; min-width: 300px; background: #000; padding: 20px; border: 2px solid #333; }
+        .team-list { list-style: none; padding: 0; }
+        .team-list li { background: #111; margin: 8px 0; padding: 12px; text-align: center; color: #00e676; border: 1px solid #444; }
+        #game-grid-view { background: var(--grid-bg); flex-direction: column; align-items: center; min-height: 100vh; }
+        .scoreboard { display: flex; gap: 40px; margin-bottom: 20px; background: rgba(255, 255, 255, 0.05); padding: 15px 50px; border-radius: 60px; font-size: 36px; }
+        .team-score { font-family: 'El Messiri'; font-size: 64px; }
+        .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; }
+        .hex-container { width: var(--hex-width); height: var(--hex-height); position: relative; cursor: pointer; }
+        .hex-container:nth-child(10n+6), .hex-container:nth-child(10n+7), .hex-container:nth-child(10n+8), .hex-container:nth-child(10n+9), .hex-container:nth-child(10n+10) { transform: translateX(calc(var(--hex-width) / 2 + var(--hex-gap) / 2)); }
+        .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; }
+        .state-0 { background: rgba(255,255,255,0.1); }
+        .state-1 { background: #fbc02d; color: #333; }
+        .state-2 { background: #b71c1c; }
+        .state-3 { background: #ff9800; }
+        .login-wrapper { width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px; border-radius: 20px; text-align: center; margin: 10vh auto; }
+        .input-name { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444; margin-bottom: 15px; background: #2c2c2c; color: white; text-align: center; box-sizing: border-box; }
+        .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; color: white; }
+        .btn-maroon { background: #b71c1c; }
+        .btn-orange { background: #ff9800; }
+        #buzzer-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 80px; font-weight: bold; flex-direction: column; }
+        .flash-red-active { animation: strobe 0.15s infinite; }
+        @keyframes strobe { 0% { background-color: red; color: white; } 50% { background-color: white; color: red; } 100% { background-color: red; color: white; } }
+    </style>
+</head>
+<body>
 
-    socket.on('startGridGame', () => {
-        io.emit('showBuzzerScreen');
-    });
+    <div id="buzzer-overlay">اضغط!</div>
+    <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg" preload="auto"></audio>
 
-    socket.on('pressBuzzer', () => {
-        if (!buzzerLocked) {
-            buzzerLocked = true; 
-            io.emit('buzzerWinner', { id: socket.id });
-            setTimeout(() => {
-                buzzerLocked = false;
-                io.emit('buzzerAutoReset'); 
-            }, 10000); 
+    <div id="admin-view">
+        <h1>🎮 لوحة التحكم</h1>
+        <div style="background: #222; padding: 10px; border: 2px dashed #7c4dff; text-align: center; margin-bottom: 20px;">
+            كود الغرفة: <strong id="display-room-code" style="color: #00e676; font-size: 24px;">----</strong>
+        </div>
+        <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة</button>
+        <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
+        <div class="teams-container">
+            <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
+            <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+        </div>
+    </div>
+
+    <div id="game-grid-view">
+        <div class="scoreboard">
+            <div onclick="incrementScore(1)" style="color: var(--maroon-team); text-align: center;">
+                <span>الخمري</span><br><span id="score-1" class="team-score">0</span>
+            </div>
+            <div onclick="incrementScore(2)" style="color: var(--orange-team); text-align: center;">
+                <span>البرتقالي</span><br><span id="score-2" class="team-score">0</span>
+            </div>
+        </div>
+        <div class="honeycomb" id="grid"></div>
+    </div>
+
+    <div id="participant-view">
+        <div class="login-wrapper" id="login-area">
+            <h1>💡 دخول</h1>
+            <input type="text" id="room-code" class="input-name" placeholder="كود الغرفة...">
+            <input type="text" id="username" class="input-name" placeholder="اسمك...">
+            <button class="choice-btn btn-maroon" onclick="login('الخمري')">الفريق الخمري</button>
+            <button class="choice-btn btn-orange" onclick="login('البرتقالي')">الفريق البرتقالي</button>
+        </div>
+        <div id="game-area" style="display:none;" class="login-wrapper">
+            <h1>🎉 تم الانضمام</h1>
+            <p>انتظر المسؤول...</p>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let scoreTeam1 = 0, scoreTeam2 = 0;
+        let countdownInterval, soundInterval;
+        const buzzerOverlay = document.getElementById('buzzer-overlay');
+        const buzzerSound = document.getElementById('buzzer-sound');
+
+        function showView(viewId) {
+            document.getElementById('admin-view').style.display = 'none';
+            document.getElementById('game-grid-view').style.display = 'none';
+            document.getElementById('participant-view').style.display = 'none';
+            document.getElementById(viewId).style.display = (viewId === 'game-grid-view') ? 'flex' : 'block';
         }
-    });
 
-    socket.on('resetGame', () => {
-        users = {};
-        buzzerLocked = false;
-        io.emit('gameReset');
-    });
+        // التعرف التلقائي
+        if (window.innerWidth > 800) showView('admin-view');
+        else showView('participant-view');
 
-    socket.on('disconnect', () => {
-        delete users[socket.id];
-        io.emit('updateUserList', users);
-    });
-});
+        socket.on('adminCode', (code) => {
+            const el = document.getElementById('display-room-code');
+            if(el) el.innerText = code;
+        });
 
-const PORT = 3000;
-http.listen(PORT, () => {
-    console.log(`✅ السيرفر يعمل: http://localhost:${PORT}`);
-    console.log(`🔑 كود الغرفة: ${GAME_ROOM_CODE}`);
-});
+        function login(team) {
+            let name = document.getElementById('username').value;
+            let code = document.getElementById('room-code').value;
+            if(!code || !name) return alert("أكمل البيانات!");
+            socket.emit('registerUser', {name, team, code});
+        }
+
+        socket.on('loginSuccess', () => {
+            document.getElementById('login-area').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+        });
+
+        socket.on('loginError', (msg) => alert(msg));
+
+        // --- نظام البوزر (كما في كودك الأصلي تماماً) ---
+        socket.on('buzzerWinner', (winnerData) => {
+            clearInterval(countdownInterval);
+            if (socket.id === winnerData.id) {
+                // تكرار الصوت كما طلبت
+                soundInterval = setInterval(() => {
+                    buzzerSound.currentTime = 0;
+                    buzzerSound.play().catch(e => {});
+                }, 150);
+                buzzerOverlay.classList.add('flash-red-active');
+                buzzerOverlay.innerText = 'أنت الأسرع!';
+            } else {
+                // العداد التنازلي للآخرين
+                let timeLeft = 10;
+                buzzerOverlay.style.pointerEvents = 'none'; 
+                buzzerOverlay.innerText = timeLeft;
+                countdownInterval = setInterval(() => {
+                    timeLeft -= 1;
+                    if (timeLeft > 0) buzzerOverlay.innerText = timeLeft;
+                    else clearInterval(countdownInterval);
+                }, 1000);
+            }
+        });
+
+        socket.on('buzzerAutoReset', () => {
+            clearInterval(countdownInterval);
+            clearInterval(soundInterval); 
+            buzzerSound.pause();
+            if (window.innerWidth <= 800) {
+                buzzerOverlay.style.display = 'flex';
+                buzzerOverlay.style.backgroundColor = 'white';
+                buzzerOverlay.classList.remove('flash-red-active');
+                buzzerOverlay.innerText = 'اضغط!';
+                buzzerOverlay.style.pointerEvents = 'auto';
+            }
+        });
+
+        // باقي الوظائف (Grid, Score, etc.)
+        function startTheGame() { showView('game-grid-view'); createGrid(); socket.emit('startGridGame'); }
+        function createGrid() {
+            const grid = document.getElementById('grid'); grid.innerHTML = '';
+            const letters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"].sort(() => Math.random() - 0.5);
+            letters.forEach((char) => {
+                const container = document.createElement('div'); container.className = 'hex-container';
+                const hex = document.createElement('div'); hex.className = 'hex state-0'; hex.innerText = char; hex.dataset.state = 0;
+                container.onclick = () => { let s = (parseInt(hex.dataset.state) + 1) % 4; hex.dataset.state = s; hex.className = `hex state-${s}`; };
+                container.appendChild(hex); grid.appendChild(container);
+            });
+        }
+        function incrementScore(t) {
+            if(t===1) { scoreTeam1++; document.getElementById('score-1').innerText = scoreTeam1; }
+            else { scoreTeam2++; document.getElementById('score-2').innerText = scoreTeam2; }
+        }
+        socket.on('updateUserList', (users) => {
+            const mList = document.getElementById('team-maroon'); const oList = document.getElementById('team-orange');
+            if(!mList) return; mList.innerHTML = ''; oList.innerHTML = '';
+            for(let id in users) {
+                let li = document.createElement('li'); li.innerText = users[id].name;
+                if(users[id].team === 'الخمري') mList.appendChild(li); else oList.appendChild(li);
+            }
+        });
+        socket.on('showBuzzerScreen',
