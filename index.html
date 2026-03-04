@@ -105,9 +105,8 @@
             document.getElementById(viewId).style.display = (viewId === 'game-grid-view') ? 'flex' : 'block';
         }
 
-        // الكود الذكي للفصل بين المسؤول والمتسابق
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('admin')) {
+        // العودة للتعرف التلقائي: لابتوب = مسؤول، جوال = متسابق
+        if (window.innerWidth > 800) {
             showView('admin-view');
         } else {
             showView('participant-view');
@@ -178,7 +177,8 @@
         });
 
         socket.on('showBuzzerScreen', () => {
-            if (!urlParams.has('admin')) buzzerOverlay.style.display = 'flex';
+            // البوزر يظهر فقط على الأجهزة الصغيرة (المتسابقين)
+            if (window.innerWidth <= 800) buzzerOverlay.style.display = 'flex';
         });
 
         buzzerOverlay.onclick = () => socket.emit('pressBuzzer');
