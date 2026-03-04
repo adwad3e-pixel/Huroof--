@@ -64,17 +64,6 @@ io.on('connection', (socket) => {
     });
 });
 
-// داخل دالة createGrid عند تعريف onclick للخلية
-container.onclick = function() {
-    let st = (hex.dataset.st || 0);
-    st = (parseInt(st) + 1) % 4;
-    hex.dataset.st = st;
-    
-    // إضافة كلاس الأنيميشن
-    hex.className = `hex state-${st} pulse-animation`;
-    
-    // حذفه بعد انتهاء التأثير لكي يعمل في المرة القادمة
-    setTimeout(() => hex.classList.remove('pulse-animation'), 500);
 };
 
 function getUsersInRoom(room) {
@@ -89,4 +78,5 @@ const PORT = 3000;
 http.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
 });
+
 
