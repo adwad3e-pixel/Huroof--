@@ -11,9 +11,9 @@
     <style>
         :root {
             --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
-            --hex-width: 160px; 
-            --hex-height: 184px;
-            --hex-gap: 12px;
+            --hex-width: 140px; 
+            --hex-height: 160px;
+            --hex-gap: 10px;
             --color-1-start: #fbc02d; 
             --color-1-end: #ffa000;
             --color-2-start: #b71c1c; 
@@ -24,92 +24,77 @@
             --color-4-end: rgba(255, 255, 255, 0.05);
             --maroon-team: #cf6679;
             --orange-team: #ffb74d;
-            --success-color: #03dac6;
         }
 
         body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
         
         #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
 
-        /* مؤشر الغرفة الحالية */
+        /* مؤشر الغرفة */
         #room-tag {
             position: fixed; top: 10px; left: 10px; background: rgba(124, 77, 255, 0.3);
             padding: 5px 15px; border-radius: 20px; border: 1px solid #7c4dff;
             font-size: 14px; z-index: 9999; display: none;
         }
 
-        /* لوحة التحكم */
-        #admin-view { max-width: 1200px; margin: 0 auto; color: #fff; }
-        #admin-view h1 { text-align: center; color: #fff; font-weight: 700; margin-bottom: 30px; text-shadow: 0 0 10px #7c4dff; }
-
-        .teams-container { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
-        .team-box { 
-            flex: 1; min-width: 300px;
-            background: #000; 
-            border-radius: 0; 
-            padding: 20px; 
-            border: 2px solid #333;
-            box-shadow: 0 0 15px rgba(124, 77, 255, 0.2);
+        /* تنسيق الأزرار أسفل الخلية */
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
         }
-        .team-box h2 { margin-top: 0; text-align: center; font-family: 'El Messiri'; border-bottom: 2px solid; padding-bottom: 10px; }
-
-        .team-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
-        .team-list li { 
-            background: #111; margin: 8px 0; padding: 12px; 
-            border-radius: 0; text-align: center;
-            border: 1px solid #444; font-weight: bold;
-            color: #00e676; 
-            transition: all 0.3s;
+        .control-group { display: flex; gap: 10px; width: 100%; justify-content: center; }
+        .pg2-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Cairo';
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            color: white;
+            font-size: 16px;
         }
+        .btn-reset-score { background: #444; }
+        .btn-rename { background: #0288d1; }
+        .btn-win { background: #388e3c; }
+        .btn-exit { background: #d32f2f; }
 
-        .admin-btn { 
-            width: 100%; padding: 18px; font-size: 18px; border-radius: 0; 
-            border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; 
-            transition: all 0.3s; font-family: 'Cairo'; text-transform: uppercase;
-        }
-        .btn-start { background-color: #00e676; color: #000; }
-        .btn-reset { background-color: #ff1744; color: white; }
-
-        /* شاشة اللعبة */
+        /* شاشة اللعبة والسكور */
         #game-grid-view { background: var(--grid-bg); flex-direction: column; align-items: center; min-height: 100vh; }
         .scoreboard { 
             display: flex; gap: 40px; margin-bottom: 20px; 
             background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); 
             padding: 15px 50px; border-radius: 60px; 
             border: 1px solid rgba(255, 255, 255, 0.1); 
-            font-size: 36px; font-weight: bold; justify-content: center; align-items: center;
+            font-size: 24px; font-weight: bold; justify-content: center; align-items: center;
         }
-        .team-score { font-family: 'El Messiri', sans-serif; font-size: 64px; line-height: 1; }
-        .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; margin-bottom: 50px; }
+        .team-score { font-family: 'El Messiri', sans-serif; font-size: 50px; line-height: 1; }
+
+        /* الخلية */
+        .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; margin-bottom: 20px; }
         .hex-container { width: var(--hex-width); height: var(--hex-height); position: relative; cursor: pointer; }
         .hex-container:nth-child(10n+6), .hex-container:nth-child(10n+7), .hex-container:nth-child(10n+8), .hex-container:nth-child(10n+9), .hex-container:nth-child(10n+10) { transform: translateX(calc(var(--hex-width) / 2 + var(--hex-gap) / 2)); }
-        .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; transition: all 0.3s ease; }
+        .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 45px; font-weight: bold; transition: all 0.3s ease; }
         .state-0 { background: linear-gradient(135deg, var(--color-4-start), var(--color-4-end)); color: white; }
         .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
 
-        /* شاشة المتسابق */
-        #participant-view { padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
-        .login-wrapper {
-            width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px;
-            border-radius: 20px; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.6); text-align: center;
-        }
-        .input-box {
-            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444;
-            margin-bottom: 15px; font-size: 16px; background: #2c2c2c; color: white;
-            text-align: center; box-sizing: border-box; transition: all 0.3s;
-        }
-        .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; font-size: 17px; cursor: pointer; transition: all 0.2s ease; }
-        .btn-maroon { background: linear-gradient(135deg, #b71c1c, #880e4f); color: white; }
-        .btn-orange { background: linear-gradient(135deg, #ff9800, #e65100); color: white; }
+        /* شاشة المتسابق والبوزر */
+        .login-wrapper { width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px; border-radius: 20px; text-align: center; }
+        .input-box { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444; margin-bottom: 15px; background: #2c2c2c; color: white; text-align: center; box-sizing: border-box; }
+        .admin-btn { width: 100%; padding: 15px; font-weight: bold; border: none; cursor: pointer; margin-bottom: 10px; font-family: 'Cairo'; }
         
-        /* البوزر */
         #buzzer-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: white; color: black; z-index: 10000; justify-content: center; 
-            align-items: center; font-size: 80px; font-weight: bold; 
-            cursor: pointer; user-select: none; flex-direction: column;
+            align-items: center; font-size: 80px; font-weight: bold; flex-direction: column;
         }
         .flash-red-active { animation: strobe 0.15s infinite; }
         @keyframes strobe { 0% { background-color: red; color: white; } 50% { background-color: white; color: red; } 100% { background-color: red; color: white; } }
@@ -123,101 +108,96 @@
 
     <div id="admin-view">
         <h1>🎮 لوحة التحكم</h1>
-        
         <div id="admin-setup-area" style="max-width:400px; margin: 0 auto 20px;">
-            <input type="text" id="admin-room-input" class="input-box" placeholder="أدخل رمز الغرفة (مثلاً: 100)">
-            <button class="admin-btn btn-start" onclick="activateAdminRoom()" style="background:#7c4dff; color:white">تفعيل الغرفة 🔑</button>
+            <input type="text" id="admin-room-input" class="input-box" placeholder="أدخل رمز الغرفة">
+            <button class="admin-btn" onclick="activateAdminRoom()" style="background:#7c4dff; color:white">تفعيل الغرفة 🔑</button>
         </div>
 
         <div id="admin-main-controls" style="display:none">
-            <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
-            <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
-            
-            <div class="teams-container">
-                <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
-                <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+            <button class="admin-btn" onclick="startTheGame()" style="background:#00e676; color:#000">▶️ بدء الجولة (لوحة الحروف)</button>
+            <button class="admin-btn" onclick="resetGameServer()" style="background:#ff1744; color:white">🔄 إعادة ضبط النظام</button>
+            <div style="display:flex; gap:20px; margin-top:20px">
+                <div style="flex:1; border:1px solid #333; padding:10px"><h3>الفريق الخمري</h3><ul id="team-maroon"></ul></div>
+                <div style="flex:1; border:1px solid #333; padding:10px"><h3>الفريق البرتقالي</h3><ul id="team-orange"></ul></div>
             </div>
         </div>
     </div>
 
     <div id="game-grid-view">
         <div class="scoreboard">
-            <div onclick="incrementScore(1)" class="team-container-box" style="color: var(--maroon-team); text-align:center">
-                <span id="team-name-1" class="team-name-text">الفريق الخمري</span><br>
+            <div onclick="incrementScore(1)" style="color: var(--maroon-team); text-align:center; cursor:pointer">
+                <span id="team-name-1">الفريق الخمري</span><br>
                 <span id="score-1" class="team-score">0</span>
             </div>
-            <div onclick="incrementScore(2)" class="team-container-box" style="color: var(--orange-team); text-align:center">
-                <span id="team-name-2" class="team-name-text">الفريق البرتقالي</span><br>
+            <div onclick="incrementScore(2)" style="color: var(--orange-team); text-align:center; cursor:pointer">
+                <span id="team-name-2">الفريق البرتقالي</span><br>
                 <span id="score-2" class="team-score">0</span>
             </div>
         </div>
+
         <div class="honeycomb" id="grid"></div>
-        <div style="margin-top:20px; display:flex; gap:10px">
-             <button class="admin-btn btn-reset" style="width:auto" onclick="location.reload()">🔙 خروج</button>
-             <button class="admin-btn" style="width:auto; background:#555" onclick="createGrid();">إعادة توزيع الحروف 🔄</button>
+
+        <div class="controls">
+            <div class="control-group">
+                <button class="pg2-btn btn-reset-score" onclick="resetScoresOnly()">تصفير النتائج 🔢</button>
+                <button class="pg2-btn" style="background:#555" onclick="createGrid()">إعادة توزيع الحروف 🔄</button>
+            </div>
+            <div class="control-group">
+                <button class="pg2-btn btn-rename" onclick="promptTeamNames()">تغيير الأسماء ✏️</button>
+                <button class="pg2-btn btn-win" onclick="celebrate()">مبروك ✨</button>
+                <button class="pg2-btn btn-exit" onclick="location.reload()">🔙 خروج</button>
+            </div>
         </div>
     </div>
 
     <div id="participant-view">
         <div class="login-wrapper" id="login-area">
-            <h1 class="login-title">💡 تسجيل الدخول</h1>
-            <input type="text" id="room-input" class="input-box" placeholder="رمز الغرفة (مثلاً: 100)">
-            <input type="text" id="username" class="input-box" placeholder="أدخل اسمك الكريم...">
-            <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
-            <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
+            <h1>💡 دخول المتسابق</h1>
+            <input type="text" id="room-input" class="input-box" placeholder="رمز الغرفة">
+            <input type="text" id="username" class="input-box" placeholder="اسمك">
+            <button class="admin-btn" onclick="login('الخمري')" style="background:#b71c1c; color:white">الفريق الخمري</button>
+            <button class="admin-btn" onclick="login('البرتقالي')" style="background:#ff9800; color:white">الفريق البرتقالي</button>
         </div>
         <div id="game-area" style="display:none;" class="login-wrapper">
-            <h1 style="color:white; font-family:'El Messiri'; font-size: 24px;">🎉 تم التسجيل!</h1>
-            <p>بانتظار المضيف...</p>
+            <h1>🎉 تم الاتصال</h1>
+            <p>انتظر سؤال المضيف...</p>
         </div>
     </div>
 
     <script>
         const socket = io();
-        const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
         let currentRoom = "";
         let scoreTeam1 = 0, scoreTeam2 = 0;
-        const buzzerOverlay = document.getElementById('buzzer-overlay');
-        const buzzerSound = document.getElementById('buzzer-sound');
-        let soundInterval, countdownInterval;
+        const originalLetters = ["أ","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص","ض","ط","ظ","ع","غ","ف","ق","ك","ل","م","ن"];
 
         function showView(viewId) {
-            document.getElementById('admin-view').style.display = 'none';
-            document.getElementById('game-grid-view').style.display = 'none';
-            document.getElementById('participant-view').style.display = 'none';
+            ['admin-view', 'game-grid-view', 'participant-view'].forEach(v => document.getElementById(v).style.display = 'none');
             const target = document.getElementById(viewId);
-            if(viewId === 'game-grid-view') target.style.display = 'flex';
-            else target.style.display = 'block';
+            target.style.display = (viewId === 'game-grid-view') ? 'flex' : 'block';
         }
 
-        // تحديد الواجهة بناءً على حجم الشاشة
         if (window.innerWidth > 768) showView('admin-view');
         else showView('participant-view');
 
         function activateAdminRoom() {
             const room = document.getElementById('admin-room-input').value;
-            if(!room) return alert("يرجى إدخال رمز الغرفة!");
+            if(!room) return alert("ادخل الرمز");
             currentRoom = room;
-            socket.emit('joinRoom', currentRoom);
+            socket.emit('joinRoom', room);
             document.getElementById('admin-setup-area').style.display = 'none';
             document.getElementById('admin-main-controls').style.display = 'block';
-            updateRoomUI(room);
+            document.getElementById('room-id-display').innerText = "#" + room;
+            document.getElementById('room-tag').style.display = 'block';
         }
 
         function login(team) {
             const room = document.getElementById('room-input').value;
             const name = document.getElementById('username').value;
-            if(!name || !room) return alert("يرجى إكمال البيانات!");
+            if(!name || !room) return alert("اكمل البيانات");
             currentRoom = room;
-            socket.emit('registerUser', {name, team, room: currentRoom});
+            socket.emit('registerUser', {name, team, room});
             document.getElementById('login-area').style.display = 'none';
             document.getElementById('game-area').style.display = 'block';
-            updateRoomUI(room);
-        }
-
-        function updateRoomUI(room) {
-            document.getElementById('room-id-display').innerText = "#" + room;
-            document.getElementById('room-tag').style.display = 'block';
         }
 
         function startTheGame() {
@@ -226,28 +206,42 @@
             socket.emit('startGridGame', currentRoom);
         }
 
-        function resetGameServer() { socket.emit('resetGame', currentRoom); }
-
         function createGrid() {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             let letters = [...originalLetters].sort(() => Math.random() - 0.5);
-            letters.forEach((char, index) => {
+            letters.forEach(char => {
                 const container = document.createElement('div');
                 container.className = 'hex-container';
                 const hex = document.createElement('div');
-                hex.className = `hex state-0`;
+                hex.className = 'hex state-0';
                 hex.innerText = char;
                 hex.dataset.state = 0;
                 container.onclick = () => {
                     let s = (parseInt(hex.dataset.state) + 1) % 4;
                     hex.dataset.state = s;
                     hex.className = `hex state-${s}`;
-                    // يمكنك هنا إضافة logic فحص الفوز إذا أردت
                 };
                 container.appendChild(hex);
                 grid.appendChild(container);
             });
+        }
+
+        function resetScoresOnly() {
+            scoreTeam1 = 0; scoreTeam2 = 0;
+            document.getElementById('score-1').innerText = "0";
+            document.getElementById('score-2').innerText = "0";
+        }
+
+        function promptTeamNames() {
+            let n1 = prompt("اسم الفريق 1:", "الفريق الخمري");
+            let n2 = prompt("اسم الفريق 2:", "الفريق البرتقالي");
+            if(n1) document.getElementById('team-name-1').innerText = n1;
+            if(n2) document.getElementById('team-name-2').innerText = n2;
+        }
+
+        function celebrate() {
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
         function incrementScore(t) {
@@ -255,7 +249,9 @@
             else { scoreTeam2++; document.getElementById('score-2').innerText = scoreTeam2; }
         }
 
-        // أحداث الـ Socket المحدثة للغرف
+        function resetGameServer() { socket.emit('resetGame', currentRoom); }
+
+        // Socket Events
         socket.on('updateUserList', (users) => {
             const mList = document.getElementById('team-maroon');
             const oList = document.getElementById('team-orange');
@@ -270,40 +266,26 @@
         });
 
         socket.on('showBuzzerScreen', () => {
-            if (window.innerWidth <= 768) { 
-                buzzerOverlay.style.display = 'flex';
-                buzzerOverlay.innerText = 'اضغط!';
-            }
+            if (window.innerWidth <= 768) document.getElementById('buzzer-overlay').style.display = 'flex';
         });
 
-        buzzerOverlay.onclick = function() { socket.emit('pressBuzzer', currentRoom); };
+        document.getElementById('buzzer-overlay').onclick = () => socket.emit('pressBuzzer', currentRoom);
 
-        socket.on('buzzerWinner', (winnerData) => {
-            clearInterval(countdownInterval);
-            if (socket.id === winnerData.id) {
-                soundInterval = setInterval(() => {
-                    buzzerSound.currentTime = 0;
-                    buzzerSound.play();
-                }, 150);
-                buzzerOverlay.classList.add('flash-red-active');
-                buzzerOverlay.innerText = 'أنت الأسرع!';
+        socket.on('buzzerWinner', (data) => {
+            const overlay = document.getElementById('buzzer-overlay');
+            if(socket.id === data.id) {
+                overlay.innerText = "أنت الأسرع!";
+                overlay.classList.add('flash-red-active');
+                document.getElementById('buzzer-sound').play();
             } else {
-                let timeLeft = 10;
-                buzzerOverlay.innerText = timeLeft;
-                countdownInterval = setInterval(() => {
-                    timeLeft -= 1;
-                    buzzerOverlay.innerText = (timeLeft > 0) ? timeLeft : "انتهى الوقت";
-                    if(timeLeft <= 0) clearInterval(countdownInterval);
-                }, 1000);
+                overlay.innerText = "فاز: " + data.name;
             }
         });
 
         socket.on('buzzerAutoReset', () => {
-            clearInterval(countdownInterval);
-            clearInterval(soundInterval); 
-            buzzerSound.pause();
-            buzzerOverlay.classList.remove('flash-red-active');
-            buzzerOverlay.innerText = 'اضغط!';
+            const overlay = document.getElementById('buzzer-overlay');
+            overlay.classList.remove('flash-red-active');
+            overlay.innerText = "اضغط!";
         });
 
         socket.on('gameReset', () => location.reload());
