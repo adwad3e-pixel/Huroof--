@@ -1,162 +1,29 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام المسابقات الذكي - نظام الغرف</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=El+Messiri:wght@700&display=swap" rel="stylesheet">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
-    <style>
-        :root {
-            --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
-            --hex-width: 160px; 
-            --hex-height: 184px;
-            --hex-gap: 12px;
-            --color-1-start: #fbc02d; 
-            --color-1-end: #ffa000;
-            --color-2-start: #b71c1c; 
-            --color-2-end: #880e4f;
-            --color-3-start: #ff9800; 
-            --color-3-end: #e65100;
-            --color-4-start: rgba(255, 255, 255, 0.1); 
-            --color-4-end: rgba(255, 255, 255, 0.05);
-            --maroon-team: #cf6679;
-            --orange-team: #ffb74d;
-        }
+<div id="room-display" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; border: 1px solid #7c4dff; display: none; z-index: 9999;">
+    <span style="color: #aaa; font-size: 12px;">الغرفة الحالية: </span>
+    <span id="current-room-id" style="color: #00e676; font-weight: bold;">#---</span>
+</div>
 
-        body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
-        #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
+<script>
+    // داخل دالة login ودالة setupAdminRoom أضف هذا السطر:
+    function updateRoomUI(room) {
+        const display = document.getElementById('room-display');
+        const text = document.getElementById('current-room-id');
+        text.innerText = "#" + room;
+        display.style.display = 'block';
+    }
 
-        /* تنسيق المدخلات الجديد لنظام الغرف */
-        .input-group { margin-bottom: 15px; }
-        .input-label { display: block; margin-bottom: 5px; color: #aaa; font-size: 14px; text-align: right; }
-        
-        .input-field {
-            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444;
-            margin-bottom: 10px; font-size: 16px; background: #2c2c2c; color: white;
-            text-align: center; box-sizing: border-box; transition: all 0.3s;
-        }
-        .input-field:focus { outline: none; border-color: #7c4dff; box-shadow: 0 0 10px rgba(124, 77, 255, 0.3); }
+    // استدعِ الدالة عند تسجيل الدخول بنجاح
+    function login(team) {
+        const room = document.getElementById('room-code').value;
+        // ... (باقي الكود السابق) ...
+        updateRoomUI(room);
+        socket.emit('registerUser', {name, team, room});
+    }
 
-        /* باقي التنسيقات كما هي في الكود الأصلي */
-        .team-box { flex: 1; min-width: 300px; background: #000; padding: 20px; border: 2px solid #333; }
-        .team-list { list-style: none; padding: 0; }
-        .team-list li { background: #111; margin: 8px 0; padding: 12px; border: 1px solid #444; color: #00e676; text-align: center; }
-        .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); gap: var(--hex-gap); justify-content: center; }
-        .hex { width: 100%; height: 184px; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; }
-        .state-0 { background: rgba(255,255,255,0.1); }
-        .state-2 { background: var(--color-2-start); }
-        .state-3 { background: var(--color-3-start); }
-        #buzzer-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 80px; font-weight: bold; }
-        .flash-red-active { animation: strobe 0.15s infinite; }
-        @keyframes strobe { 0%, 100% { background: red; color: white; } 50% { background: white; color: red; } }
-    </style>
-</head>
-<body>
-
-    <div id="buzzer-overlay">اضغط!</div>
-    <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg" preload="auto"></audio>
-
-    <div id="admin-view">
-        <h1 style="text-align:center">🎮 لوحة التحكم - غرف المسابقة</h1>
-        <div class="login-wrapper" id="admin-setup" style="max-width:400px; margin: 0 auto 30px; background:#1e1e1e; padding:20px; border-radius:15px;">
-            <input type="text" id="admin-room" class="input-field" placeholder="أدخل رمز الغرفة الخاص بك...">
-            <button class="admin-btn btn-start" onclick="setupAdminRoom()" style="background:#7c4dff; color:white; padding:10px; width:100%; border:none; cursor:pointer">تفعيل الغرفة 🔑</button>
-        </div>
-
-        <div id="admin-controls" style="display:none">
-            <button class="admin-btn btn-start" onclick="startTheGame()" style="width:100%; padding:15px; background:#00e676; margin-bottom:10px; font-weight:bold">▶️ بدء الجولة</button>
-            <div style="display:flex; gap:20px">
-                <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
-                <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="game-grid-view">
-        <div id="grid" class="honeycomb"></div>
-        <button onclick="location.reload()" style="margin-top:20px; padding:10px">خروج من الغرفة 🔙</button>
-    </div>
-
-    <div id="participant-view">
-        <div class="login-wrapper" id="login-area" style="max-width:400px; margin:auto; background:#1e1e1e; padding:30px; border-radius:20px; text-align:center">
-            <h1 style="font-family:'El Messiri'">💡 انضم للمسابقة</h1>
-            <input type="text" id="room-code" class="input-field" placeholder="رمز الغرفة (مثال: 123)">
-            <input type="text" id="username" class="input-field" placeholder="اسمك الكريم">
-            <button onclick="login('الخمري')" style="background:linear-gradient(135deg, #b71c1c, #880e4f); color:white; width:100%; padding:15px; margin-bottom:10px; border:none; border-radius:10px; cursor:pointer">فريق الخمري</button>
-            <button onclick="login('البرتقالي')" style="background:linear-gradient(135deg, #ff9800, #e65100); color:white; width:100%; padding:15px; border:none; border-radius:10px; cursor:pointer">فريق البرتقالي</button>
-        </div>
-        <div id="game-area" style="display:none; text-align:center">
-            <h2>انتظار المضيف...</h2>
-        </div>
-    </div>
-
-    <script>
-        const socket = io();
-        let currentRoom = "";
-
-        function setupAdminRoom() {
-            const room = document.getElementById('admin-room').value;
-            if(!room) return alert("أدخل رمز الغرفة!");
-            currentRoom = room;
-            socket.emit('joinRoom', room); // إرسال طلب انضمام للغرفة
-            document.getElementById('admin-setup').style.display = 'none';
-            document.getElementById('admin-controls').style.display = 'block';
-        }
-
-        function login(team) {
-            const room = document.getElementById('room-code').value;
-            const name = document.getElementById('username').value;
-            if(!room || !name) return alert("أكمل البيانات!");
-            currentRoom = room;
-            socket.emit('registerUser', {name, team, room}); // إرسال الاسم واللغرفة
-            document.getElementById('login-area').style.display = 'none';
-            document.getElementById('game-area').style.display = 'block';
-        }
-
-        // تعديل جميع الإرسالات لتشمل الغرفة
-        function startTheGame() {
-            showView('game-grid-view');
-            createGrid();
-            socket.emit('startGridGame', currentRoom); 
-        }
-
-        // استقبال التحديثات الخاصة بالغرفة فقط
-        socket.on('updateUserList', (users) => {
-            const mList = document.getElementById('team-maroon');
-            const oList = document.getElementById('team-orange');
-            if(!mList) return;
-            mList.innerHTML = ''; oList.innerHTML = '';
-            for(let id in users) {
-                let li = document.createElement('li');
-                li.innerText = users[id].name;
-                if(users[id].team === 'الخمري') mList.appendChild(li);
-                else oList.appendChild(li);
-            }
-        });
-
-        // باقي وظائف اللعبة (createGrid, showView, الخ) كما هي في الكود السابق
-        // مع التأكد أن السيرفر يستخدم io.to(room).emit لإرسال الإشارات
-        
-        function showView(id) {
-            document.getElementById('admin-view').style.display = 'none';
-            document.getElementById('game-grid-view').style.display = 'none';
-            document.getElementById('participant-view').style.display = 'none';
-            document.getElementById(id).style.display = (id==='game-grid-view'?'flex':'block');
-        }
-
-        function createGrid() {
-            const grid = document.getElementById('grid');
-            grid.innerHTML = '';
-            ["أ","ب","ت","ث","ج","ح","خ","د","ذ","ر","ز","س","ش","ص","ض"].forEach(char => {
-                const div = document.createElement('div');
-                div.className = 'hex state-0';
-                div.innerText = char;
-                grid.appendChild(div);
-            });
-        }
-    </script>
-</body>
-</html>
+    function setupAdminRoom() {
+        const room = document.getElementById('admin-room').value;
+        // ... (باقي الكود السابق) ...
+        updateRoomUI(room);
+        socket.emit('joinRoom', room);
+    }
+</script>
