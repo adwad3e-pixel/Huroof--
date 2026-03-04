@@ -7,34 +7,35 @@ const path = require('path');
 app.use(express.static(__dirname));
 
 let users = {};
-let roomBuzzers = {}; // قفل البوزر لكل غرفة على حدة لضمان عدم التداخل
+let roomBuzzers = {}; // تخزين حالة البوزر لكل غرفة
 
 io.on('connection', (socket) => {
     
-    // انضمام المسؤول أو المتسابق لغرفة محددة
+    // انضمام لغرفة (يتم استدعاؤها من المسؤول والمتسابق)
     socket.on('joinRoom', (room) => {
         socket.join(room);
         socket.currentRoom = room;
-        console.log(`Socket ${socket.id} joined room: ${room}`);
+        console.log(`متصل جديد انضم للغرفة: ${room}`);
     });
 
-    // تسجيل المستخدم في غرفة
+    // تسجيل المتسابق في غرفة محددة
     socket.on('registerUser', (data) => {
         const room = data.room;
+        if (!room) return;
+
         socket.join(room);
         socket.currentRoom = room;
         
         users[socket.id] = {
             name: data.name,
-            team: data.team,
             room: room
         };
 
-        // إرسال تحديث قائمة الأسماء فقط لأعضاء نفس الغرفة
+        // تحديث القائمة للمسؤول في نفس الغرفة
         io.to(room).emit('updateUserList', getUsersInRoom(room));
     });
 
-    // بدء اللعبة في غرفة محددة
+    // بدء اللعبة - يرسل إشارة لفتح شاشة البوزر للمتسابقين في الغرفة فقط
     socket.on('startGridGame', () => {
         const room = socket.currentRoom;
         if (room) {
@@ -42,19 +43,21 @@ io.on('connection', (socket) => {
         }
     });
 
-    // عند ضغط البوزر
+    // منطق ضغط البوزر
     socket.on('pressBuzzer', () => {
         const room = socket.currentRoom;
         if (room && !roomBuzzers[room]) {
             roomBuzzers[room] = true; 
             
-            // إرسال بيانات الفائز لأعضاء الغرفة فقط
+            const winnerName = users[socket.id] ? users[socket.id].name : "مجهول";
+            
+            // إرسال النتيجة للغرفة فقط
             io.to(room).emit('buzzerWinner', { 
                 id: socket.id, 
-                name: users[socket.id] ? users[socket.id].name : "مجهول" 
+                name: winnerName 
             });
 
-            // إعادة ضبط تلقائي للبوزر بعد 10 ثوانٍ داخل الغرفة
+            // إعادة ضبط تلقائي بعد 10 ثوانٍ للغرفة
             setTimeout(() => {
                 roomBuzzers[room] = false;
                 io.to(room).emit('buzzerAutoReset'); 
@@ -62,15 +65,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    // إعادة الضبط الكلي من المسؤول للغرفة فقط
-    socket.on('resetGame', () => {
-        const room = socket.currentRoom;
-        if (room) {
-            roomBuzzers[room] = false;
-            io.to(room).emit('gameReset');
-        }
-    });
-
+    // عند قطع الاتصال
     socket.on('disconnect', () => {
         const room = socket.currentRoom;
         if (users[socket.id]) {
@@ -82,7 +77,7 @@ io.on('connection', (socket) => {
     });
 });
 
-// دالة لجلب المستخدمين المتواجدين في غرفة معينة فقط
+// دالة تصفية المستخدمين حسب الغرفة
 function getUsersInRoom(room) {
     let roomUsers = {};
     for (let id in users) {
@@ -95,5 +90,5 @@ function getUsersInRoom(room) {
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-    console.log(`✅ السيرفر يعمل بنجاح على المنفذ: ${PORT}`);
+    console.log(`✅ السيرفر يعمل على المنفذ: ${PORT}`);
 });
