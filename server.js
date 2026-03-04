@@ -1,197 +1,61 @@
-// server.js — persistent game state + room codes
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const path = require('path');
-const fs = require('fs');
 
 app.use(express.static(__dirname));
 
-const PORT = process.env.PORT || 3000;
-const STATE_FILE = path.join(__dirname, 'gameState.json');
-
-let gameState = {
-  scoreTeam1: 0,
-  scoreTeam2: 0,
-  states: [],
-  letters: [],
-  teamName1: 'الفريق الخمري',
-  teamName2: 'الفريق البرتقالي'
-};
-
 let users = {};
-let rooms = {};
-
-function loadStateFromDisk() {
-  try {
-    if (fs.existsSync(STATE_FILE)) {
-      const raw = fs.readFileSync(STATE_FILE, 'utf8');
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === 'object') {
-        gameState = Object.assign(gameState, parsed);
-      }
-    }
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function saveStateToDisk() {
-  try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(gameState, null, 2));
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-loadStateFromDisk();
+let buzzerLocked = false; 
+// إنشاء كود عشوائي من 4 أرقام عند تشغيل السيرفر
+const GAME_ROOM_CODE = Math.floor(1000 + Math.random() * 9000).toString();
 
 io.on('connection', (socket) => {
+    // إرسال الكود للمسؤول عند اتصاله
+    socket.emit('adminCode', GAME_ROOM_CODE);
 
-  socket.on('createRoomWithCode', (roomCode) => {
+    // تسجيل المستخدم مع التحقق من الكود
+    socket.on('registerUser', (data) => {
+        if (data.code === GAME_ROOM_CODE) {
+            users[socket.id] = { name: data.name, team: data.team };
+            socket.emit('loginSuccess');
+            io.emit('updateUserList', users);
+        } else {
+            socket.emit('loginError', '❌ كود الغرفة غير صحيح!');
+        }
+    });
 
-    if (!rooms[roomCode]) {
+    socket.on('startGridGame', () => {
+        io.emit('showBuzzerScreen');
+    });
 
-      rooms[roomCode] = {
-        users: {},
-        gameState: JSON.parse(JSON.stringify(gameState)),
-        buzzerLocked: false
-      };
+    socket.on('pressBuzzer', () => {
+        if (!buzzerLocked) {
+            buzzerLocked = true; 
+            io.emit('buzzerWinner', { id: socket.id });
 
-    }
+            setTimeout(() => {
+                buzzerLocked = false;
+                io.emit('buzzerAutoReset'); 
+            }, 10000); 
+        }
+    });
 
-    socket.join(roomCode);
-    socket.roomId = roomCode;
+    socket.on('resetGame', () => {
+        users = {};
+        buzzerLocked = false;
+        io.emit('gameReset');
+    });
 
-    socket.emit('roomJoined', roomCode);
-    socket.emit('gameState', rooms[roomCode].gameState);
-
-  });
-
-  socket.on('joinRoomWithCode', (roomCode) => {
-
-    if (!rooms[roomCode]) {
-      socket.emit('roomError', 'الغرفة غير موجودة');
-      return;
-    }
-
-    socket.join(roomCode);
-    socket.roomId = roomCode;
-
-    socket.emit('roomJoined', roomCode);
-    socket.emit('gameState', rooms[roomCode].gameState);
-
-  });
-
-  socket.on('registerUser', (data) => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    users[socket.id] = data;
-    rooms[roomId].users[socket.id] = data;
-
-    io.to(roomId).emit('updateUserList', rooms[roomId].users);
-
-  });
-
-  socket.on('startGridGame', () => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    io.to(roomId).emit('showBuzzerScreen');
-
-  });
-
-  socket.on('requestGameState', () => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    socket.emit('gameState', rooms[roomId].gameState);
-
-  });
-
-  socket.on('saveGameState', (data) => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    const room = rooms[roomId];
-
-    if (data.scoreTeam1 !== undefined) room.gameState.scoreTeam1 = data.scoreTeam1;
-    if (data.scoreTeam2 !== undefined) room.gameState.scoreTeam2 = data.scoreTeam2;
-    if (Array.isArray(data.states)) room.gameState.states = data.states;
-    if (Array.isArray(data.letters)) room.gameState.letters = data.letters;
-
-    io.to(roomId).emit('gameState', room.gameState);
-
-    gameState = room.gameState;
-    saveStateToDisk();
-
-  });
-
-  socket.on('pressBuzzer', () => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    const room = rooms[roomId];
-
-    if (!room.buzzerLocked) {
-
-      room.buzzerLocked = true;
-
-      io.to(roomId).emit('buzzerWinner', { id: socket.id });
-
-      setTimeout(() => {
-
-        room.buzzerLocked = false;
-
-        io.to(roomId).emit('buzzerAutoReset');
-
-      }, 10000);
-
-    }
-
-  });
-
-  socket.on('resetGame', () => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    rooms[roomId].users = {};
-    rooms[roomId].buzzerLocked = false;
-
-    rooms[roomId].gameState = {
-      scoreTeam1: 0,
-      scoreTeam2: 0,
-      states: [],
-      letters: []
-    };
-
-    io.to(roomId).emit('gameReset');
-    io.to(roomId).emit('gameState', rooms[roomId].gameState);
-
-  });
-
-  socket.on('disconnect', () => {
-
-    const roomId = socket.roomId;
-    if (!roomId) return;
-
-    delete users[socket.id];
-    delete rooms[roomId].users[socket.id];
-
-    io.to(roomId).emit('updateUserList', rooms[roomId].users);
-
-  });
-
+    socket.on('disconnect', () => {
+        delete users[socket.id];
+        io.emit('updateUserList', users);
+    });
 });
 
+const PORT = 3000;
 http.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
+    console.log(`🔑 كود الغرفة الحالي هو: ${GAME_ROOM_CODE}`);
 });
