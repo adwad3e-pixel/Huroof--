@@ -1,4 +1,4 @@
-// server.js  — persistent game state with disk backup
+// server.js — persistent game state + room codes
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
@@ -15,8 +15,8 @@ const STATE_FILE = path.join(__dirname, 'gameState.json');
 let gameState = {
   scoreTeam1: 0,
   scoreTeam2: 0,
-  states: [],   // array of cell states (strings or numbers)
-  letters: [],  // array of letters in grid
+  states: [],
+  letters: [],
   teamName1: 'الفريق الخمري',
   teamName2: 'الفريق البرتقالي'
 };
@@ -24,10 +24,10 @@ let gameState = {
 let users = {};
 let buzzerLocked = false;
 
-// ROOM: تخزين الغرف
-let rooms = {}; // { roomId: { users:{}, gameState:{}, buzzerLocked:false } }
+// rooms storage
+let rooms = {}; // { roomCode: { users:{}, gameState:{}, buzzerLocked:false } }
 
-// try to load existing state from disk
+// load state from disk
 function loadStateFromDisk() {
   try {
     if (fs.existsSync(STATE_FILE)) {
@@ -51,48 +51,87 @@ function saveStateToDisk() {
   }
 }
 
-// load at startup
 loadStateFromDisk();
 
 io.on('connection', (socket) => {
 
-  // ROOM: قراءة الغرفة من الرابط
-  const roomId = socket.handshake.query.room || "main";
+  // إنشاء غرفة بكود
+  socket.on('createRoomWithCode', (roomCode) => {
 
-  // إنشاء الغرفة إذا لم تكن موجودة
-  if (!rooms[roomId]) {
-    rooms[roomId] = {
-      users: {},
-      gameState: JSON.parse(JSON.stringify(gameState)),
-      buzzerLocked: false
-    };
-  }
+    if (!rooms[roomCode]) {
 
-  socket.join(roomId);
-  const room = rooms[roomId];
+      rooms[roomCode] = {
+        users: {},
+        gameState: JSON.parse(JSON.stringify(gameState)),
+        buzzerLocked: false
+      };
+
+    }
+
+    socket.join(roomCode);
+    socket.roomId = roomCode;
+
+    socket.emit('roomJoined', roomCode);
+    socket.emit('gameState', rooms[roomCode].gameState);
+
+  });
+
+  // الانضمام إلى غرفة
+  socket.on('joinRoomWithCode', (roomCode) => {
+
+    if (!rooms[roomCode]) {
+      socket.emit('roomError', 'الغرفة غير موجودة');
+      return;
+    }
+
+    socket.join(roomCode);
+    socket.roomId = roomCode;
+
+    socket.emit('roomJoined', roomCode);
+    socket.emit('gameState', rooms[roomCode].gameState);
+
+  });
 
   // تسجيل المستخدم
   socket.on('registerUser', (data) => {
-    users[socket.id] = data;
-    room.users[socket.id] = data; // ROOM
-    io.to(roomId).emit('updateUserList', room.users); // ROOM
-  });
 
-  // إرسال حالة اللعبة
-  socket.emit('gameState', room.gameState); // ROOM
+    const roomId = socket.roomId;
+    if (!roomId) return;
+
+    users[socket.id] = data;
+    rooms[roomId].users[socket.id] = data;
+
+    io.to(roomId).emit('updateUserList', rooms[roomId].users);
+
+  });
 
   // بدء اللعبة
   socket.on('startGridGame', () => {
-    io.to(roomId).emit('showBuzzerScreen'); // ROOM
+
+    const roomId = socket.roomId;
+    if (!roomId) return;
+
+    io.to(roomId).emit('showBuzzerScreen');
+
   });
 
   // طلب حالة اللعبة
   socket.on('requestGameState', () => {
-    socket.emit('gameState', room.gameState); // ROOM
+
+    const roomId = socket.roomId;
+    if (!roomId) return;
+
+    socket.emit('gameState', rooms[roomId].gameState);
+
   });
 
   // حفظ حالة اللعبة
   socket.on('saveGameState', (data) => {
+
+    const roomId = socket.roomId;
+    if (!roomId) return;
+
+    const room = rooms[roomId];
 
     if (data.scoreTeam1 !== undefined) room.gameState.scoreTeam1 = data.scoreTeam1;
     if (data.scoreTeam2 !== undefined) room.gameState.scoreTeam2 = data.scoreTeam2;
@@ -101,27 +140,32 @@ io.on('connection', (socket) => {
     if (data.teamName1) room.gameState.teamName1 = data.teamName1;
     if (data.teamName2) room.gameState.teamName2 = data.teamName2;
 
-    io.to(roomId).emit('gameState', room.gameState); // ROOM
+    io.to(roomId).emit('gameState', room.gameState);
 
-    // حفظ نسخة عامة احتياطية
     gameState = room.gameState;
     saveStateToDisk();
+
   });
 
   // البوزر
   socket.on('pressBuzzer', () => {
 
+    const roomId = socket.roomId;
+    if (!roomId) return;
+
+    const room = rooms[roomId];
+
     if (!room.buzzerLocked) {
 
       room.buzzerLocked = true;
 
-      io.to(roomId).emit('buzzerWinner', { id: socket.id }); // ROOM
+      io.to(roomId).emit('buzzerWinner', { id: socket.id });
 
       setTimeout(() => {
 
         room.buzzerLocked = false;
 
-        io.to(roomId).emit('buzzerAutoReset'); // ROOM
+        io.to(roomId).emit('buzzerAutoReset');
 
       }, 10000);
 
@@ -132,10 +176,13 @@ io.on('connection', (socket) => {
   // إعادة ضبط اللعبة
   socket.on('resetGame', () => {
 
-    room.users = {};
-    room.buzzerLocked = false;
+    const roomId = socket.roomId;
+    if (!roomId) return;
 
-    room.gameState = {
+    rooms[roomId].users = {};
+    rooms[roomId].buzzerLocked = false;
+
+    rooms[roomId].gameState = {
       scoreTeam1: 0,
       scoreTeam2: 0,
       states: [],
@@ -144,17 +191,20 @@ io.on('connection', (socket) => {
       teamName2: 'الفريق البرتقالي'
     };
 
-    io.to(roomId).emit('gameReset'); // ROOM
-    io.to(roomId).emit('gameState', room.gameState); // ROOM
+    io.to(roomId).emit('gameReset');
+    io.to(roomId).emit('gameState', rooms[roomId].gameState);
 
   });
 
   socket.on('disconnect', () => {
 
-    delete users[socket.id];
-    delete room.users[socket.id]; // ROOM
+    const roomId = socket.roomId;
+    if (!roomId) return;
 
-    io.to(roomId).emit('updateUserList', room.users); // ROOM
+    delete users[socket.id];
+    delete rooms[roomId].users[socket.id];
+
+    io.to(roomId).emit('updateUserList', rooms[roomId].users);
 
   });
 
