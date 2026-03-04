@@ -2,208 +2,409 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الحروف المطور - نسخة الغرف</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>نظام المسابقات الذكي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=El+Messiri:wght@700&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
     <style>
-        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: #fff; text-align: center; overflow-x: hidden; }
-        
-        /* شاشة اللعبة الأساسية */
-        #game-grid-view { display: none; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; padding-bottom: 160px; }
-        
-        .scoreboard { display: flex; gap: 30px; background: #222; padding: 10px 40px; border-radius: 50px; margin-bottom: 20px; border: 2px solid #444; box-shadow: 0 0 20px rgba(124, 77, 255, 0.2); }
-        .score { font-size: 50px; font-weight: bold; cursor: pointer; display: block; }
-        .team-label { font-size: 18px; opacity: 0.8; }
-        
-        /* الخلية */
-        .honeycomb { display: grid; grid-template-columns: repeat(5, 120px); grid-auto-rows: 100px; gap: 10px; justify-content: center; margin-top: 20px; }
-        .hex { 
-            width: 120px; height: 130px; background: rgba(255,255,255,0.1); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.3s;
+        :root {
+            --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
+            --hex-width: 160px; 
+            --hex-height: 184px;
+            --hex-gap: 12px;
+            --color-1-start: #fbc02d; 
+            --color-1-end: #ffa000;
+            --color-2-start: #b71c1c; 
+            --color-2-end: #880e4f;
+            --color-3-start: #ff9800; 
+            --color-3-end: #e65100;
+            --color-4-start: rgba(255, 255, 255, 0.1); 
+            --color-4-end: rgba(255, 255, 255, 0.05);
+            --maroon-team: #cf6679;
+            --orange-team: #ffb74d;
+            --success-color: #03dac6;
         }
-        .hex:hover { transform: scale(1.05); background: rgba(255,255,255,0.2); }
-        .state-1 { background: #ffa000 !important; color: #000; } /* برتقالي */
-        .state-2 { background: #b71c1c !important; color: #fff; } /* خمري */
-        .state-3 { background: #388e3c !important; color: #fff; } /* أخضر/محايد */
 
-        /* حاوية الأزرار - ثابتة أسفل الشاشة */
-        .fixed-controls {
-            position: fixed; bottom: 0; left: 0; width: 100%; background: #111;
-            padding: 15px; border-top: 3px solid #7c4dff; display: flex; flex-direction: column; gap: 10px; z-index: 999;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
+        body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
+        
+        #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
+
+        /* لوحة التحكم */
+        #admin-view { max-width: 1200px; margin: 0 auto; color: #fff; }
+        #admin-view h1 { text-align: center; color: #fff; font-weight: 700; margin-bottom: 30px; text-shadow: 0 0 10px #7c4dff; }
+
+        .teams-container { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
+        .team-box { 
+            flex: 1; min-width: 300px;
+            background: #000; 
+            border-radius: 0; 
+            padding: 20px; 
+            border: 2px solid #333;
+            box-shadow: 0 0 15px rgba(124, 77, 255, 0.2);
         }
-        .btn-group { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 600px; margin: 0 auto; }
-        .btn { padding: 12px 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; flex: 1; font-size: 14px; transition: 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        .team-box h2 { margin-top: 0; text-align: center; font-family: 'El Messiri'; border-bottom: 2px solid; padding-bottom: 10px; }
+
+        .team-list { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+        .team-list li { 
+            background: #111; margin: 8px 0; padding: 12px; 
+            border-radius: 0; text-align: center;
+            border: 1px solid #444; font-weight: bold;
+            color: #00e676; 
+            transition: all 0.3s;
+        }
+        .team-list li:hover { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
+        .admin-btn { 
+            width: 100%; padding: 18px; font-size: 18px; border-radius: 0; 
+            border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; 
+            transition: all 0.3s; font-family: 'Cairo'; text-transform: uppercase;
+        }
+        .admin-btn:hover { transform: scale(1.02); }
+        .btn-start { background-color: #00e676; color: #000; box-shadow: 0 0 15px rgba(0,230,118,0.5); }
+        .btn-reset { background-color: #ff1744; color: white; box-shadow: 0 0 15px rgba(255,23,68,0.5); }
+
+        /* شاشة اللعبة */
+        #game-grid-view { background: var(--grid-bg); flex-direction: column; align-items: center; min-height: 100vh; }
+        .scoreboard { 
+            display: flex; gap: 40px; margin-bottom: 20px; 
+            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); 
+            padding: 15px 50px; border-radius: 60px; 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            font-size: 36px; font-weight: bold; justify-content: center; align-items: center;
+        }
+        .team-container-box { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; position: relative; }
+        .team-name-text { font-size: 32px; margin: 0; }
+        .team-score { font-family: 'El Messiri', sans-serif; font-size: 64px; line-height: 1; }
+        .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; margin-bottom: 50px; }
+        .hex-container { width: var(--hex-width); height: var(--hex-height); position: relative; cursor: pointer; }
+        .hex-container:nth-child(10n+6), .hex-container:nth-child(10n+7), .hex-container:nth-child(10n+8), .hex-container:nth-child(10n+9), .hex-container:nth-child(10n+10) { transform: translateX(calc(var(--hex-width) / 2 + var(--hex-gap) / 2)); }
+        .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; transition: all 0.3s ease; }
+        @keyframes winPulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(1); filter: brightness(1); } }
+        .win-highlight { animation: winPulse 0.7s infinite ease-in-out !important; z-index: 10; }
+        .state-0 { background: linear-gradient(135deg, var(--color-4-start), var(--color-4-end)); color: white; }
+        .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
+        .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
+        .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
+        .controls { display: flex; justify-content: space-between; width: 95%; max-width: 1200px; margin-top: auto; padding-bottom: 20px; }
+        .control-group { display: flex; gap: 15px; }
+        .pg2-btn { padding: 12px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; }
+        .btn-win { background: #4caf50; color: white; }
+        .btn-rename { background: #03a9f4; color: white; }
+        .btn-reset-score { background: #e91e63; color: white; }
+
+        /* شاشة المتسابق */
+        #participant-view { padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .login-wrapper {
+            width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px;
+            border-radius: 20px; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.6); text-align: center;
+        }
+        .login-title { font-family: 'El Messiri', sans-serif; font-size: 28px; margin-bottom: 25px; color: white; letter-spacing: 1px; }
+        .input-name {
+            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444;
+            margin-bottom: 25px; font-size: 16px; background: #2c2c2c; color: white;
+            text-align: center; box-sizing: border-box; transition: all 0.3s;
+        }
+        .input-name:focus { outline: none; border-color: #7c4dff; }
+        .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; font-size: 17px; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
+        .choice-btn:active { transform: scale(0.98); }
+        .btn-maroon { background: linear-gradient(135deg, #b71c1c, #880e4f); color: white; border-bottom: 4px solid #560000; }
+        .btn-orange { background: linear-gradient(135deg, #ff9800, #e65100); color: white; border-bottom: 4px solid #a53200; }
         
-        /* شاشات الدخول */
-        .setup-screen { padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; }
-        .input-field { padding: 15px; width: 280px; margin: 10px; border-radius: 10px; border: 1px solid #444; background: #222; color: #fff; text-align: center; font-size: 18px; }
-        
+        /* البوزر */
         #buzzer-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 50px; font-weight: bold;
-            flex-direction: column; text-align: center;
+            background: white; color: black; z-index: 10000; justify-content: center; 
+            align-items: center; font-size: 80px; font-weight: bold; 
+            cursor: pointer; user-select: none; flex-direction: column;
         }
-        .winner-flash { animation: flash 0.2s infinite; }
-        @keyframes flash { 0% { background: #ff1744; color: white; } 100% { background: white; color: #ff1744; } }
+        .flash-red-active { animation: strobe 0.15s infinite; }
+        @keyframes strobe { 0% { background-color: red; color: white; } 50% { background-color: white; color: red; } 100% { background-color: red; color: white; } }
     </style>
 </head>
 <body>
 
     <div id="buzzer-overlay">اضغط!</div>
-    <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg"></audio>
+    <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg" preload="auto"></audio>
 
-    <div id="setup-admin" class="setup-screen">
-        <h1 style="color:#7c4dff">🎮 إعداد غرفة المسابقة</h1>
-        <input type="text" id="room-id" class="input-field" placeholder="أدخل رقم الغرفة (مثلاً: 100)">
-        <button onclick="initAdmin()" class="btn" style="background:#7c4dff; width: 310px; font-size: 18px;">تفعيل الغرفة ودخول المضيف</button>
+    <div id="admin-view">
+        <h1>🎮 لوحة التحكم</h1>
+        <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
+        <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
+        
+        <div class="teams-container">
+            <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
+            <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+        </div>
+
+        <div id="instructions-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; font-family: 'Cairo'; background-color: #111; border-radius: 15px; margin: 40px auto; max-width: 1000px; border: 1px solid #333; direction: rtl;">
+            <div class="lang-ar" style="flex: 1; min-width: 280px; text-align: right; border-right: 4px solid #3498db; padding-right: 15px;">
+                <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px; font-family: 'El Messiri';">🎮 كيف تلعب "لعبة حروف"؟</h2>
+                <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
+                    <li style="margin-bottom: 8px;"><strong>💻 شاشة العرض:</strong> افتح هذا الرابط من جهاز الكمبيوتر لترى خلية الحروف.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 أجهزة المتسابقين:</strong> يفتح كل متسابق نفس الرابط من جواله.</li>
+                    <li style="margin-bottom: 8px;"><strong>❓ الأسئلة:</strong> عند قول المقدم السؤال، أسرع متسابق يضغط سيظهر وميض لعشر ثوانٍ للإجابة.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 الهدف:</strong> إيصال اللون ببعضه البعض (أفقياً أو عمودياً).</li>
+                </ul>
+            </div>
+            <div class="lang-en" style="flex: 1; min-width: 280px; direction: ltr; text-align: left; border-left: 4px solid #3498db; padding-left: 15px;">
+                <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px;">🎮 How to play?</h2>
+                <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
+                    <li style="margin-bottom: 8px;"><strong>💻 Display:</strong> Open link on PC for the grid.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 Contestants:</strong> Open link on mobiles to join.</li>
+                    <li style="margin-bottom: 8px;"><strong>⚡ Speed:</strong> Fastest one to press buzzer gets 10s to answer.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 Goal:</strong> Connect your color from side to side.</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <div id="game-grid-view">
         <div class="scoreboard">
-            <div onclick="addScore(1)" style="color:#ffa000">
-                <span id="n1" class="team-label">الفريق البرتقالي</span>
-                <span id="s1" class="score">0</span>
+            <div onclick="incrementScore(1)" class="team-container-box" style="color: var(--maroon-team);">
+                <span id="team-name-1" class="team-name-text">الفريق الخمري</span>
+                <span id="score-1" class="team-score">0</span>
             </div>
-            <div style="font-size: 40px; align-self: center; margin: 0 10px; opacity: 0.3;">VS</div>
-            <div onclick="addScore(2)" style="color:#cf6679">
-                <span id="n2" class="team-label">الفريق الخمري</span>
-                <span id="s2" class="score">0</span>
+            <div onclick="incrementScore(2)" class="team-container-box" style="color: var(--orange-team);">
+                <span id="team-name-2" class="team-name-text">الفريق البرتقالي</span>
+                <span id="score-2" class="team-score">0</span>
             </div>
         </div>
-
         <div class="honeycomb" id="grid"></div>
-
-        <div class="fixed-controls">
-            <div class="btn-group">
-                <button onclick="resetScores()" class="btn" style="background:#444">تصفير السكور 🔢</button>
-                <button onclick="createGrid()" class="btn" style="background:#666">توزيع الحروف 🔄</button>
+        <div class="controls">
+            <div class="control-group">
+                <button class="pg2-btn btn-reset-score" onclick="resetScoresOnly()">تصفير النتائج 🔢</button>
+                <button class="pg2-btn" style="background:#555; color:white" onclick="createGrid(); saveGame();">إعادة ضبط اللوحة 🔄</button>
             </div>
-            <div class="btn-group">
-                <button onclick="changeNames()" class="btn" style="background:#0288d1">تغيير الأسماء ✏️</button>
-                <button onclick="winEffect()" class="btn" style="background:#388e3c">مبروك ✨</button>
-                <button onclick="location.reload()" class="btn" style="background:#d32f2f">خروج 🔙</button>
+            <div class="control-group">
+                <button class="pg2-btn btn-rename" onclick="promptTeamNames()">تغيير الأسماء ✏️</button>
+                <button class="pg2-btn btn-win" onclick="celebrate()">مبروك ✨</button>
+                <button class="pg2-btn" style="background:#333; color:white" onclick="location.reload()">🔙 عودة</button>
             </div>
         </div>
     </div>
 
-    <div id="setup-player" class="setup-screen" style="display:none">
-        <h2 style="color:#ffa000">📱 دخول متسابق</h2>
-        <input type="text" id="p-room" class="input-field" placeholder="رقم الغرفة">
-        <input type="text" id="p-name" class="input-field" placeholder="اسمك الكريم">
-        <div style="display:flex; gap:10px;">
-            <button onclick="playerJoin('البرتقالي')" class="btn" style="background:#ffa000; width:140px">فريق برتقالي</button>
-            <button onclick="playerJoin('الخمري')" class="btn" style="background:#b71c1c; width:140px">فريق خمري</button>
+    <div id="participant-view">
+        <div class="login-wrapper" id="login-area">
+            <h1 class="login-title">💡 تسجيل الدخول</h1>
+            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك الكريم...">
+            <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
+            <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
+        </div>
+        <div id="game-area" style="display:none;" class="login-wrapper">
+            <h1 style="color:white; font-family:'El Messiri'; font-size: 24px;">🎉 تم التسجيل بنجاح!</h1>
+            <p class="wait-text">انتظر بدء الجولة من لوحة التحكم...</p>
         </div>
     </div>
 
     <script>
         const socket = io();
-        let currentRoom = "";
-        let score1 = 0, score2 = 0;
+        const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
+        let scoreTeam1 = 0, scoreTeam2 = 0;
+        const buzzerOverlay = document.getElementById('buzzer-overlay');
+        const buzzerSound = document.getElementById('buzzer-sound');
+        let soundInterval, countdownInterval;
 
-        // التحويل التلقائي بناءً على حجم الشاشة (جوال = لاعب، كمبيوتر = إدمن)
-        if(window.innerWidth <= 768) {
-            document.getElementById('setup-admin').style.display = 'none';
-            document.getElementById('setup-player').style.display = 'flex';
+        function showView(viewId) {
+            document.getElementById('admin-view').style.display = 'none';
+            document.getElementById('game-grid-view').style.display = 'none';
+            document.getElementById('participant-view').style.display = 'none';
+            buzzerOverlay.style.display = 'none'; 
+            const target = document.getElementById(viewId);
+            if(viewId === 'game-grid-view') target.style.display = 'flex';
+            else target.style.display = 'block';
         }
 
-        function initAdmin() {
-            currentRoom = document.getElementById('room-id').value;
-            if(!currentRoom) return alert("يرجى إدخال رقم الغرفة أولاً");
-            socket.emit('joinRoom', currentRoom);
-            document.getElementById('setup-admin').style.display = 'none';
-            document.getElementById('game-grid-view').style.display = 'flex';
-            createGrid();
-            socket.emit('startGridGame', currentRoom);
+        if (window.innerWidth > 768) showView('admin-view');
+        else showView('participant-view');
+
+        function startTheGame() {
+            showView('game-grid-view');
+            if(!loadGame()) createGrid();
+            socket.emit('startGridGame');
+        }
+        
+        function resetGameServer() { socket.emit('resetGame'); }
+
+        function incrementScore(t) {
+            if(t===1) { scoreTeam1++; document.getElementById('score-1').innerText = scoreTeam1; }
+            else { scoreTeam2++; document.getElementById('score-2').innerText = scoreTeam2; }
+            saveGame();
         }
 
-        function playerJoin(team) {
-            const r = document.getElementById('p-room').value;
-            const n = document.getElementById('p-name').value;
-            if(!r || !n) return alert("اكمل البيانات (الاسم والرقم)");
-            currentRoom = r;
-            socket.emit('registerUser', {name: n, team: team, room: r});
-            document.getElementById('setup-player').innerHTML = `<h1 style="color:#00e676">تم الاتصال بالغرفة ${r} ✅</h1><p>بانتظار سؤال المضيف...</p>`;
-        }
-
-        function createGrid() {
+        function createGrid(savedStates = null, savedLetters = null) {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            const letters = "أبتثجحخدذرزسشصضطظعغفقكلمن".split("");
-            letters.sort(() => Math.random() - 0.5).forEach(l => {
-                const h = document.createElement('div');
-                h.className = 'hex';
-                h.innerText = l;
-                h.onclick = function() {
-                    let st = (this.dataset.st || 0);
-                    st = (parseInt(st) + 1) % 4;
-                    this.dataset.st = st;
-                    this.className = 'hex state-' + st;
+            let letters = savedLetters || [...originalLetters].sort(() => Math.random() - 0.5);
+            letters.forEach((char, index) => {
+                const container = document.createElement('div');
+                container.className = 'hex-container';
+                const hex = document.createElement('div');
+                let state = (savedStates && savedStates[index]) ? savedStates[index] : 0;
+                hex.className = `hex state-${state}`;
+                hex.innerText = char;
+                hex.dataset.state = state;
+                container.onclick = () => {
+                    let s = (parseInt(hex.dataset.state) + 1) % 4;
+                    hex.dataset.state = s;
+                    hex.className = `hex state-${s}`;
+                    saveGame();
+                    checkWinCondition();
                 };
-                grid.appendChild(h);
+                container.appendChild(hex);
+                grid.appendChild(container);
             });
         }
 
-        function addScore(t) {
-            if(t===1) { score1++; document.getElementById('s1').innerText = score1; }
-            else { score2++; document.getElementById('s2').innerText = score2; }
+        function saveGame() {
+            const states = Array.from(document.querySelectorAll('.hex')).map(h => h.dataset.state);
+            const letters = Array.from(document.querySelectorAll('.hex')).map(h => h.innerText);
+            localStorage.setItem('gameData', JSON.stringify({scoreTeam1, scoreTeam2, states, letters}));
         }
 
-        function resetScores() {
-            score1 = 0; score2 = 0;
-            document.getElementById('s1').innerText = 0;
-            document.getElementById('s2').innerText = 0;
+        function loadGame() {
+            const data = JSON.parse(localStorage.getItem('gameData'));
+            if(!data) return false;
+            scoreTeam1 = data.scoreTeam1; scoreTeam2 = data.scoreTeam2;
+            document.getElementById('score-1').innerText = scoreTeam1;
+            document.getElementById('score-2').innerText = scoreTeam2;
+            createGrid(data.states, data.letters);
+            return true;
         }
 
-        function changeNames() {
-            let p1 = prompt("اسم الفريق الأول:", document.getElementById('n1').innerText);
-            let p2 = prompt("اسم الفريق الثاني:", document.getElementById('n2').innerText);
-            if(p1) document.getElementById('n1').innerText = p1;
-            if(p2) document.getElementById('n2').innerText = p2;
+        function resetScoresOnly() {
+            scoreTeam1 = 0; scoreTeam2 = 0;
+            document.getElementById('score-1').innerText = 0;
+            document.getElementById('score-2').innerText = 0;
+            document.querySelectorAll('.hex').forEach(h => h.classList.remove('win-highlight'));
+            saveGame();
         }
 
-        function winEffect() { 
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); 
+        function promptTeamNames() {
+            let n1 = prompt("اسم الفريق 1:", "الفريق الخمري");
+            let n2 = prompt("اسم الفريق 2:", "الفريق البرتقالي");
+            if(n1) document.getElementById('team-name-1').innerText = n1;
+            if(n2) document.getElementById('team-name-2').innerText = n2;
         }
 
-        // --- أحداث Socket.io ---
+        function celebrate() { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
 
-        socket.on('showBuzzerScreen', () => {
-            // تظهر شاشة البوزر فقط للمتسابقين (الجوال)
-            if(window.innerWidth <= 768) {
-                const ov = document.getElementById('buzzer-overlay');
-                ov.style.display = 'flex';
-                ov.classList.remove('winner-flash');
-                ov.innerText = "اضغط!";
+        function checkWinCondition() {
+            document.querySelectorAll('.hex').forEach(h => h.classList.remove('win-highlight'));
+            const winPath1 = checkPath(2);
+            if (winPath1) { highlightWinner(winPath1); return; }
+            const winPath2 = checkPath(3);
+            if (winPath2) { highlightWinner(winPath2); return; }
+        }
+
+        function highlightWinner(pathCoords) {
+            const hexes = document.querySelectorAll('.hex');
+            pathCoords.forEach(coord => {
+                const index = coord[0] * 5 + coord[1];
+                hexes[index].classList.add('win-highlight');
+            });
+            celebrate();
+        }
+
+        function checkPath(state) {
+            const hexes = document.querySelectorAll('.hex');
+            const board = Array.from(hexes).map(h => parseInt(h.dataset.state));
+            const matrix = [];
+            for (let i = 0; i < 5; i++) matrix.push(board.slice(i * 5, i * 5 + 5));
+            for (let c = 0; c < 5; c++) if (matrix[0][c] === state) { let p = bfs(matrix, 0, c, state, 'V'); if (p) return p; }
+            for (let r = 0; r < 5; r++) if (matrix[r][4] === state) { let p = bfs(matrix, r, 4, state, 'H'); if (p) return p; }
+            return null;
+        }
+
+        function bfs(matrix, startR, startC, state, type) {
+            let queue = [{r: startR, c: startC, path: [[startR, startC]]}];
+            let visited = new Set([`${startR},${startC}`]);
+            while (queue.length > 0) {
+                let {r, c, path} = queue.shift();
+                if (type === 'V' && r === 4) return path;
+                if (type === 'H' && c === 0) return path;
+                const isEven = r % 2 === 0;
+                const dirs = isEven ? [[-1,0], [-1,1], [0,-1], [0,1], [1,0], [1,1]] : [[-1,-1], [-1,0], [0,-1], [0,1], [1,-1], [1,0]];
+                for (let [dr, dc] of dirs) {
+                    let nR = r + dr, nC = c + dc;
+                    if (nR >= 0 && nR < 5 && nC >= 0 && nC < 5 && matrix[nR][nC] === state && !visited.has(`${nR},${nC}`)) {
+                        visited.add(`${nR},${nC}`);
+                        queue.push({r: nR, c: nC, path: [...path, [nR, nC]]});
+                    }
+                }
+            }
+            return null;
+        }
+
+        function login(team) {
+            let name = document.getElementById('username').value;
+            if(!name) return alert("الرجاء إدخال اسمك!");
+            socket.emit('registerUser', {name, team});
+            document.getElementById('login-area').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+        }
+
+        socket.on('updateUserList', (users) => {
+            const mList = document.getElementById('team-maroon');
+            const oList = document.getElementById('team-orange');
+            mList.innerHTML = ''; oList.innerHTML = '';
+            for(let id in users) {
+                let li = document.createElement('li');
+                li.innerText = users[id].name;
+                if(users[id].team === 'الخمري') mList.appendChild(li);
+                else oList.appendChild(li);
             }
         });
 
-        document.getElementById('buzzer-overlay').onclick = () => {
-            socket.emit('pressBuzzer', currentRoom);
-        };
+        socket.on('gameReset', () => location.reload());
 
-        socket.on('buzzerWinner', (data) => {
-            const ov = document.getElementById('buzzer-overlay');
-            if(socket.id === data.id) {
-                ov.innerText = "أنت الأسرع! ⚡";
-                ov.classList.add('winner-flash');
-                document.getElementById('buzzer-sound').play();
+        socket.on('showBuzzerScreen', () => {
+            if (window.innerWidth <= 768) { 
+                buzzerOverlay.style.display = 'flex';
+                buzzerOverlay.style.backgroundColor = 'white';
+                buzzerOverlay.style.color = 'black';
+                buzzerOverlay.classList.remove('flash-red-active');
+                buzzerOverlay.innerText = 'اضغط!';
+                buzzerOverlay.style.pointerEvents = 'auto';
+            }
+        });
+
+        buzzerOverlay.onclick = function() { socket.emit('pressBuzzer'); };
+
+        socket.on('buzzerWinner', (winnerData) => {
+            clearInterval(countdownInterval);
+            if (socket.id === winnerData.id) {
+                soundInterval = setInterval(() => {
+                    buzzerSound.currentTime = 0;
+                    buzzerSound.play().catch(e => console.error(e));
+                }, 150);
+                buzzerOverlay.classList.add('flash-red-active');
+                buzzerOverlay.innerText = 'أنت الأسرع!';
             } else {
-                ov.innerText = "انتهى! الفائز:\n" + data.name;
-                ov.classList.remove('winner-flash');
+                let timeLeft = 10;
+                buzzerOverlay.style.pointerEvents = 'none'; 
+                buzzerOverlay.innerText = timeLeft;
+                countdownInterval = setInterval(() => {
+                    timeLeft -= 1;
+                    if (timeLeft > 0) buzzerOverlay.innerText = timeLeft;
+                    else clearInterval(countdownInterval);
+                }, 1000);
             }
         });
 
         socket.on('buzzerAutoReset', () => {
-            const ov = document.getElementById('buzzer-overlay');
-            ov.classList.remove('winner-flash');
-            ov.innerText = "اضغط!";
+            clearInterval(countdownInterval);
+            clearInterval(soundInterval); 
+            buzzerSound.pause();
+            if (window.innerWidth <= 768) {
+                buzzerOverlay.style.display = 'flex';
+                buzzerOverlay.style.backgroundColor = 'white';
+                buzzerOverlay.classList.remove('flash-red-active');
+                buzzerOverlay.innerText = 'اضغط!';
+                buzzerOverlay.style.pointerEvents = 'auto';
+            }
         });
-
-        socket.on('gameReset', () => location.reload());
     </script>
 </body>
 </html>
