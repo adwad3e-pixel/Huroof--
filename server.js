@@ -48,7 +48,31 @@ io.on('connection', (socket) => {
     });
 });
 
+// عند اتصال مستخدم جديد
+socket.on('registerUser', (data) => {
+    const { name, team, room } = data;
+    
+    // إدخال المستخدم في غرفة محددة
+    socket.join(room); 
+    
+    // تخزين بياناته وربطها بالغرفة
+    users[socket.id] = { name, team, room };
+    
+    // إرسال التحديث فقط لأعضاء هذه الغرفة
+    io.to(room).emit('updateUserList', getUsersInRoom(room));
+});
+
+// عند الضغط على البوزر
+socket.on('pressBuzzer', () => {
+    const user = users[socket.id];
+    if (user) {
+        // إعلان الفائز بالضغط فقط داخل غرفته
+        io.to(user.room).emit('buzzerWinner', { id: socket.id, name: user.name });
+    }
+});
+
 const PORT = 3000;
 http.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
+
 });
