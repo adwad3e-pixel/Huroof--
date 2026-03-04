@@ -3,44 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الحروف المطور</title>
+    <title>نظام الحروف المطور - نسخة الغرف</title>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
-        body { margin: 0; font-family: sans-serif; background: #000; color: #fff; text-align: center; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #000; color: #fff; text-align: center; overflow-x: hidden; }
         
         /* شاشة اللعبة الأساسية */
-        #game-grid-view { display: none; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
+        #game-grid-view { display: none; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; padding-bottom: 160px; }
         
-        .scoreboard { display: flex; gap: 30px; background: #222; padding: 10px 40px; border-radius: 50px; margin-bottom: 20px; border: 2px solid #444; }
-        .score { font-size: 40px; font-weight: bold; cursor: pointer; }
+        .scoreboard { display: flex; gap: 30px; background: #222; padding: 10px 40px; border-radius: 50px; margin-bottom: 20px; border: 2px solid #444; box-shadow: 0 0 20px rgba(124, 77, 255, 0.2); }
+        .score { font-size: 50px; font-weight: bold; cursor: pointer; display: block; }
+        .team-label { font-size: 18px; opacity: 0.8; }
         
         /* الخلية */
-        .honeycomb { display: grid; grid-template-columns: repeat(5, 120px); grid-auto-rows: 100px; gap: 10px; justify-content: center; margin-bottom: 150px; }
+        .honeycomb { display: grid; grid-template-columns: repeat(5, 120px); grid-auto-rows: 100px; gap: 10px; justify-content: center; margin-top: 20px; }
         .hex { 
-            width: 120px; height: 130px; background: #333; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-            display: flex; align-items: center; justify-content: center; font-size: 30px; font-weight: bold; cursor: pointer;
+            width: 120px; height: 130px; background: rgba(255,255,255,0.1); clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: bold; cursor: pointer; transition: 0.3s;
         }
-        .state-1 { background: #ffa000; color: #000; }
-        .state-2 { background: #b71c1c; color: #fff; }
-        .state-3 { background: #388e3c; color: #fff; }
+        .hex:hover { transform: scale(1.05); background: rgba(255,255,255,0.2); }
+        .state-1 { background: #ffa000 !important; color: #000; } /* برتقالي */
+        .state-2 { background: #b71c1c !important; color: #fff; } /* خمري */
+        .state-3 { background: #388e3c !important; color: #fff; } /* أخضر/محايد */
 
         /* حاوية الأزرار - ثابتة أسفل الشاشة */
         .fixed-controls {
             position: fixed; bottom: 0; left: 0; width: 100%; background: #111;
             padding: 15px; border-top: 3px solid #7c4dff; display: flex; flex-direction: column; gap: 10px; z-index: 999;
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.8);
         }
-        .btn-group { display: flex; gap: 10px; justify-content: center; }
-        .btn { padding: 12px 20px; border: none; border-radius: 5px; color: white; font-weight: bold; cursor: pointer; flex: 1; max-width: 200px; }
+        .btn-group { display: flex; gap: 10px; justify-content: center; width: 100%; max-width: 600px; margin: 0 auto; }
+        .btn { padding: 12px 15px; border: none; border-radius: 8px; color: white; font-weight: bold; cursor: pointer; flex: 1; font-size: 14px; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
         
         /* شاشات الدخول */
-        .setup-screen { padding: 50px; }
-        .input-field { padding: 10px; width: 250px; margin: 10px; border-radius: 5px; border: none; }
+        .setup-screen { padding: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 80vh; }
+        .input-field { padding: 15px; width: 280px; margin: 10px; border-radius: 10px; border: 1px solid #444; background: #222; color: #fff; text-align: center; font-size: 18px; }
         
         #buzzer-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 50px;
+            background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 50px; font-weight: bold;
+            flex-direction: column; text-align: center;
         }
+        .winner-flash { animation: flash 0.2s infinite; }
+        @keyframes flash { 0% { background: #ff1744; color: white; } 100% { background: white; color: #ff1744; } }
     </style>
 </head>
 <body>
@@ -49,22 +56,29 @@
     <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg"></audio>
 
     <div id="setup-admin" class="setup-screen">
-        <h1>إعداد الغرفة</h1>
-        <input type="text" id="room-id" class="input-field" placeholder="أدخل رقم الغرفة"><br>
-        <button onclick="initAdmin()" class="btn" style="background:#7c4dff">تفعيل ودخول</button>
+        <h1 style="color:#7c4dff">🎮 إعداد غرفة المسابقة</h1>
+        <input type="text" id="room-id" class="input-field" placeholder="أدخل رقم الغرفة (مثلاً: 100)">
+        <button onclick="initAdmin()" class="btn" style="background:#7c4dff; width: 310px; font-size: 18px;">تفعيل الغرفة ودخول المضيف</button>
     </div>
 
     <div id="game-grid-view">
         <div class="scoreboard">
-            <div onclick="addScore(1)" style="color:#ffa000"><span id="n1">فريق 1</span><br><span id="s1" class="score">0</span></div>
-            <div onclick="addScore(2)" style="color:#cf6679"><span id="n2">فريق 2</span><br><span id="s2" class="score">0</span></div>
+            <div onclick="addScore(1)" style="color:#ffa000">
+                <span id="n1" class="team-label">الفريق البرتقالي</span>
+                <span id="s1" class="score">0</span>
+            </div>
+            <div style="font-size: 40px; align-self: center; margin: 0 10px; opacity: 0.3;">VS</div>
+            <div onclick="addScore(2)" style="color:#cf6679">
+                <span id="n2" class="team-label">الفريق الخمري</span>
+                <span id="s2" class="score">0</span>
+            </div>
         </div>
 
         <div class="honeycomb" id="grid"></div>
 
         <div class="fixed-controls">
             <div class="btn-group">
-                <button onclick="resetScores()" class="btn" style="background:#444">تصفر السكور 🔢</button>
+                <button onclick="resetScores()" class="btn" style="background:#444">تصفير السكور 🔢</button>
                 <button onclick="createGrid()" class="btn" style="background:#666">توزيع الحروف 🔄</button>
             </div>
             <div class="btn-group">
@@ -76,11 +90,13 @@
     </div>
 
     <div id="setup-player" class="setup-screen" style="display:none">
-        <h2>دخول متسابق</h2>
-        <input type="text" id="p-room" class="input-field" placeholder="رقم الغرفة"><br>
-        <input type="text" id="p-name" class="input-field" placeholder="اسمك"><br>
-        <button onclick="playerJoin('خمري')" class="btn" style="background:#b71c1c">فريق خمري</button>
-        <button onclick="playerJoin('برتقالي')" class="btn" style="background:#ffa000">فريق برتقالي</button>
+        <h2 style="color:#ffa000">📱 دخول متسابق</h2>
+        <input type="text" id="p-room" class="input-field" placeholder="رقم الغرفة">
+        <input type="text" id="p-name" class="input-field" placeholder="اسمك الكريم">
+        <div style="display:flex; gap:10px;">
+            <button onclick="playerJoin('البرتقالي')" class="btn" style="background:#ffa000; width:140px">فريق برتقالي</button>
+            <button onclick="playerJoin('الخمري')" class="btn" style="background:#b71c1c; width:140px">فريق خمري</button>
+        </div>
     </div>
 
     <script>
@@ -88,14 +104,15 @@
         let currentRoom = "";
         let score1 = 0, score2 = 0;
 
+        // التحويل التلقائي بناءً على حجم الشاشة (جوال = لاعب، كمبيوتر = إدمن)
         if(window.innerWidth <= 768) {
             document.getElementById('setup-admin').style.display = 'none';
-            document.getElementById('setup-player').style.display = 'block';
+            document.getElementById('setup-player').style.display = 'flex';
         }
 
         function initAdmin() {
             currentRoom = document.getElementById('room-id').value;
-            if(!currentRoom) return alert("ادخل الرقم");
+            if(!currentRoom) return alert("يرجى إدخال رقم الغرفة أولاً");
             socket.emit('joinRoom', currentRoom);
             document.getElementById('setup-admin').style.display = 'none';
             document.getElementById('game-grid-view').style.display = 'flex';
@@ -106,10 +123,10 @@
         function playerJoin(team) {
             const r = document.getElementById('p-room').value;
             const n = document.getElementById('p-name').value;
-            if(!r || !n) return alert("اكمل البيانات");
+            if(!r || !n) return alert("اكمل البيانات (الاسم والرقم)");
             currentRoom = r;
             socket.emit('registerUser', {name: n, team: team, room: r});
-            document.getElementById('setup-player').innerHTML = "<h1>تم الاتصال ✅</h1>";
+            document.getElementById('setup-player').innerHTML = `<h1 style="color:#00e676">تم الاتصال بالغرفة ${r} ✅</h1><p>بانتظار سؤال المضيف...</p>`;
         }
 
         function createGrid() {
@@ -142,34 +159,51 @@
         }
 
         function changeNames() {
-            let p1 = prompt("اسم الفريق الأول:");
-            let p2 = prompt("اسم الفريق الثاني:");
+            let p1 = prompt("اسم الفريق الأول:", document.getElementById('n1').innerText);
+            let p2 = prompt("اسم الفريق الثاني:", document.getElementById('n2').innerText);
             if(p1) document.getElementById('n1').innerText = p1;
             if(p2) document.getElementById('n2').innerText = p2;
         }
 
-        function winEffect() { confetti({ particleCount: 150, spread: 70 }); }
+        function winEffect() { 
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); 
+        }
 
-        // Socket Events
+        // --- أحداث Socket.io ---
+
         socket.on('showBuzzerScreen', () => {
-            if(window.innerWidth <= 768) document.getElementById('buzzer-overlay').style.display = 'flex';
+            // تظهر شاشة البوزر فقط للمتسابقين (الجوال)
+            if(window.innerWidth <= 768) {
+                const ov = document.getElementById('buzzer-overlay');
+                ov.style.display = 'flex';
+                ov.classList.remove('winner-flash');
+                ov.innerText = "اضغط!";
+            }
         });
 
-        document.getElementById('buzzer-overlay').onclick = () => socket.emit('pressBuzzer', currentRoom);
+        document.getElementById('buzzer-overlay').onclick = () => {
+            socket.emit('pressBuzzer', currentRoom);
+        };
 
         socket.on('buzzerWinner', (data) => {
             const ov = document.getElementById('buzzer-overlay');
             if(socket.id === data.id) {
                 ov.innerText = "أنت الأسرع! ⚡";
+                ov.classList.add('winner-flash');
                 document.getElementById('buzzer-sound').play();
             } else {
-                ov.innerText = "فاز: " + data.name;
+                ov.innerText = "انتهى! الفائز:\n" + data.name;
+                ov.classList.remove('winner-flash');
             }
         });
 
         socket.on('buzzerAutoReset', () => {
-            document.getElementById('buzzer-overlay').innerText = "اضغط!";
+            const ov = document.getElementById('buzzer-overlay');
+            ov.classList.remove('winner-flash');
+            ov.innerText = "اضغط!";
         });
+
+        socket.on('gameReset', () => location.reload());
     </script>
 </body>
 </html>
