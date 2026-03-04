@@ -20,7 +20,7 @@
         }
         body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
         #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
-        .admin-btn { width: 100%; padding: 18px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; font-family: 'Cairo'; }
+        .admin-btn { width: 100%; padding: 18px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; }
         .btn-start { background-color: #00e676; color: #000; }
         .btn-reset { background-color: #ff1744; color: white; }
         .teams-container { display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap; }
@@ -38,7 +38,7 @@
         .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); }
-        .login-wrapper { width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px; border-radius: 20px; text-align: center; margin: auto; }
+        .login-wrapper { width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px; border-radius: 20px; text-align: center; margin: 10vh auto; }
         .input-name { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444; margin-bottom: 15px; background: #2c2c2c; color: white; text-align: center; box-sizing: border-box; }
         .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
         .btn-maroon { background: linear-gradient(135deg, #b71c1c, #880e4f); color: white; }
@@ -56,13 +56,11 @@
     <div id="admin-view">
         <h1>🎮 لوحة التحكم</h1>
         <div style="background: #222; padding: 15px; border: 2px dashed #7c4dff; text-align: center; margin-bottom: 20px;">
-            <span style="color: #aaa;">كود الغرفة للمتسابقين:</span><br>
+            <span style="color: #aaa;">كود الدخول للمتسابقين:</span><br>
             <strong id="display-room-code" style="font-size: 32px; color: #00e676;">----</strong>
         </div>
-
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة</button>
         <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
-        
         <div class="teams-container">
             <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
             <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
@@ -72,12 +70,10 @@
     <div id="game-grid-view">
         <div class="scoreboard">
             <div onclick="incrementScore(1)" style="color: var(--maroon-team); text-align: center;">
-                <span id="team-name-1">الفريق الخمري</span><br>
-                <span id="score-1" class="team-score">0</span>
+                <span>الفريق الخمري</span><br><span id="score-1" class="team-score">0</span>
             </div>
             <div onclick="incrementScore(2)" style="color: var(--orange-team); text-align: center;">
-                <span id="team-name-2">الفريق البرتقالي</span><br>
-                <span id="score-2" class="team-score">0</span>
+                <span>الفريق البرتقالي</span><br><span id="score-2" class="team-score">0</span>
             </div>
         </div>
         <div class="honeycomb" id="grid"></div>
@@ -86,14 +82,14 @@
     <div id="participant-view">
         <div class="login-wrapper" id="login-area">
             <h1 class="login-title">💡 دخول الغرفة</h1>
-            <input type="text" id="room-code" class="input-name" placeholder="أدخل كود الغرفة (4 أرقام)...">
-            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك الكريم...">
+            <input type="text" id="room-code" class="input-name" placeholder="أدخل كود الغرفة...">
+            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك...">
             <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
             <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
         </div>
         <div id="game-area" style="display:none;" class="login-wrapper">
-            <h1>🎉 تم بنجاح!</h1>
-            <p>انتظر بدء الجولة...</p>
+            <h1>🎉 تم الانضمام</h1>
+            <p>انتظر إشارة المسؤول...</p>
         </div>
     </div>
 
@@ -101,7 +97,6 @@
         const socket = io();
         let scoreTeam1 = 0, scoreTeam2 = 0;
         const buzzerOverlay = document.getElementById('buzzer-overlay');
-        const buzzerSound = document.getElementById('buzzer-sound');
 
         function showView(viewId) {
             document.getElementById('admin-view').style.display = 'none';
@@ -110,10 +105,14 @@
             document.getElementById(viewId).style.display = (viewId === 'game-grid-view') ? 'flex' : 'block';
         }
 
-        if (window.innerWidth > 768) showView('admin-view');
-        else showView('participant-view');
+        // الكود الذكي للفصل بين المسؤول والمتسابق
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('admin')) {
+            showView('admin-view');
+        } else {
+            showView('participant-view');
+        }
 
-        // استقبال الكود من السيرفر لعرضه للمسؤول
         socket.on('adminCode', (code) => {
             const el = document.getElementById('display-room-code');
             if(el) el.innerText = code;
@@ -122,7 +121,7 @@
         function login(team) {
             let name = document.getElementById('username').value;
             let code = document.getElementById('room-code').value;
-            if(!code || !name) return alert("الرجاء إكمال البيانات!");
+            if(!code || !name) return alert("أكمل البيانات!");
             socket.emit('registerUser', {name, team, code});
         }
 
@@ -133,7 +132,6 @@
 
         socket.on('loginError', (msg) => alert(msg));
 
-        // باقي وظائف اللعبة الأصلية (Grid, Buzzer, etc.)
         function startTheGame() {
             showView('game-grid-view');
             createGrid();
@@ -169,6 +167,7 @@
         socket.on('updateUserList', (users) => {
             const mList = document.getElementById('team-maroon');
             const oList = document.getElementById('team-orange');
+            if(!mList) return;
             mList.innerHTML = ''; oList.innerHTML = '';
             for(let id in users) {
                 let li = document.createElement('li');
@@ -179,7 +178,7 @@
         });
 
         socket.on('showBuzzerScreen', () => {
-            if (window.innerWidth <= 768) buzzerOverlay.style.display = 'flex';
+            if (!urlParams.has('admin')) buzzerOverlay.style.display = 'flex';
         });
 
         buzzerOverlay.onclick = () => socket.emit('pressBuzzer');
@@ -188,7 +187,7 @@
             if (socket.id === data.id) {
                 buzzerOverlay.classList.add('flash-red-active');
                 buzzerOverlay.innerText = 'أنت الأسرع!';
-                buzzerSound.play();
+                document.getElementById('buzzer-sound').play();
             } else {
                 buzzerOverlay.innerText = 'تم الضغط!';
             }
