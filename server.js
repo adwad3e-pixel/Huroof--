@@ -11,7 +11,6 @@ app.use(express.static(__dirname));
 const PORT = process.env.PORT || 3000;
 const STATE_FILE = path.join(__dirname, 'gameState.json');
 
-// default initial state
 let gameState = {
   scoreTeam1: 0,
   scoreTeam2: 0,
@@ -22,12 +21,8 @@ let gameState = {
 };
 
 let users = {};
-let buzzerLocked = false;
+let rooms = {};
 
-// rooms storage
-let rooms = {}; // { roomCode: { users:{}, gameState:{}, buzzerLocked:false } }
-
-// load state from disk
 function loadStateFromDisk() {
   try {
     if (fs.existsSync(STATE_FILE)) {
@@ -35,19 +30,18 @@ function loadStateFromDisk() {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
         gameState = Object.assign(gameState, parsed);
-        console.log('✅ Loaded game state from disk.');
       }
     }
   } catch (err) {
-    console.error('Failed to load game state:', err);
+    console.error(err);
   }
 }
 
 function saveStateToDisk() {
   try {
-    fs.writeFileSync(STATE_FILE, JSON.stringify(gameState, null, 2), 'utf8');
+    fs.writeFileSync(STATE_FILE, JSON.stringify(gameState, null, 2));
   } catch (err) {
-    console.error('Failed to save game state:', err);
+    console.error(err);
   }
 }
 
@@ -55,7 +49,6 @@ loadStateFromDisk();
 
 io.on('connection', (socket) => {
 
-  // إنشاء غرفة بكود
   socket.on('createRoomWithCode', (roomCode) => {
 
     if (!rooms[roomCode]) {
@@ -76,7 +69,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // الانضمام إلى غرفة
   socket.on('joinRoomWithCode', (roomCode) => {
 
     if (!rooms[roomCode]) {
@@ -92,7 +84,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // تسجيل المستخدم
   socket.on('registerUser', (data) => {
 
     const roomId = socket.roomId;
@@ -105,7 +96,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // بدء اللعبة
   socket.on('startGridGame', () => {
 
     const roomId = socket.roomId;
@@ -115,7 +105,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // طلب حالة اللعبة
   socket.on('requestGameState', () => {
 
     const roomId = socket.roomId;
@@ -125,7 +114,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // حفظ حالة اللعبة
   socket.on('saveGameState', (data) => {
 
     const roomId = socket.roomId;
@@ -137,8 +125,6 @@ io.on('connection', (socket) => {
     if (data.scoreTeam2 !== undefined) room.gameState.scoreTeam2 = data.scoreTeam2;
     if (Array.isArray(data.states)) room.gameState.states = data.states;
     if (Array.isArray(data.letters)) room.gameState.letters = data.letters;
-    if (data.teamName1) room.gameState.teamName1 = data.teamName1;
-    if (data.teamName2) room.gameState.teamName2 = data.teamName2;
 
     io.to(roomId).emit('gameState', room.gameState);
 
@@ -147,7 +133,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // البوزر
   socket.on('pressBuzzer', () => {
 
     const roomId = socket.roomId;
@@ -173,7 +158,6 @@ io.on('connection', (socket) => {
 
   });
 
-  // إعادة ضبط اللعبة
   socket.on('resetGame', () => {
 
     const roomId = socket.roomId;
@@ -186,9 +170,7 @@ io.on('connection', (socket) => {
       scoreTeam1: 0,
       scoreTeam2: 0,
       states: [],
-      letters: [],
-      teamName1: 'الفريق الخمري',
-      teamName2: 'الفريق البرتقالي'
+      letters: []
     };
 
     io.to(roomId).emit('gameReset');
@@ -211,5 +193,5 @@ io.on('connection', (socket) => {
 });
 
 http.listen(PORT, () => {
-  console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
+  console.log(`Server running on http://localhost:${PORT}`);
 });
