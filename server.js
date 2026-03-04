@@ -4,89 +4,51 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const path = require('path');
 
-// ابحث عن هذا السطر في server.js
-app.use(express.static(__dirname)); 
+app.use(express.static(__dirname));
 
-// واستبدله بهذا السطر لضمان الوصول لملف index.html
-app.use(express.static(path.join(__dirname, '/')));
+let users = {};
+let buzzerLocked = false; 
 
-// وأضف هذا الجزء تحت الأوامر السابقة مباشرة
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-    // 2. تسجيل المستخدم في غرفة وفريق محدد
+io.on('connection', (socket) => {
+    // تسجيل المستخدم
     socket.on('registerUser', (data) => {
-        const { name, team, room } = data;
-        socket.join(room); // تأكيد انضمامه للغرفة تقنياً
-        
-        users[socket.id] = { name, team, room };
-        
-        // إرسال التحديث فقط لأعضاء نفس الغرفة
-        const roomUsers = getPlayersInRoom(room);
-        io.to(room).emit('updateUserList', roomUsers);
+        users[socket.id] = data;
+        io.emit('updateUserList', users);
     });
 
-    // 3. بدء اللعبة في غرفة محددة
-    socket.on('startGridGame', (room) => {
-        io.to(room).emit('showBuzzerScreen');
+    // بدء اللعبة
+    socket.on('startGridGame', () => {
+        io.emit('showBuzzerScreen');
     });
 
-    // 4. عند ضغط البوزر (نظام الغرف)
-    socket.on('pressBuzzer', (room) => {
-        // إذا لم يكن بوزر هذه الغرفة مقفلاً
-        if (!roomBuzzerStatus[room]) {
-            roomBuzzerStatus[room] = true; // قفل البوزر لهذه الغرفة فقط
-            
-            const userName = users[socket.id] ? users[socket.id].name : "متسابق";
-            
-            // إرسال الفائز بالضغط لأعضاء الغرفة فقط
-            io.to(room).emit('buzzerWinner', { 
-                id: socket.id, 
-                name: userName 
-            });
+    // عند ضغط البوزر
+    socket.on('pressBuzzer', () => {
+        if (!buzzerLocked) {
+            buzzerLocked = true; 
+            io.emit('buzzerWinner', { id: socket.id });
 
-            // إعادة ضبط تلقائي لبوزر هذه الغرفة بعد 10 ثوانٍ
+            // إعادة ضبط تلقائي بعد 10 ثوانٍ
             setTimeout(() => {
-                roomBuzzerStatus[room] = false;
-                io.to(room).emit('buzzerAutoReset'); 
+                buzzerLocked = false;
+                io.emit('buzzerAutoReset'); 
             }, 10000); 
         }
     });
 
-    // 5. إعادة الضبط الكلي من المسؤول لغرفته فقط
-    socket.on('resetGame', (room) => {
-        roomBuzzerStatus[room] = false;
-        // حذف المستخدمين المنتمين لهذه الغرفة فقط من الذاكرة
-        for (let id in users) {
-            if (users[id].room === room) delete users[id];
-        }
-        io.to(room).emit('gameReset');
+    // إعادة الضبط الكلي من المسؤول
+    socket.on('resetGame', () => {
+        users = {};
+        buzzerLocked = false;
+        io.emit('gameReset');
     });
 
     socket.on('disconnect', () => {
-        if (users[socket.id]) {
-            const room = users[socket.id].room;
-            delete users[socket.id];
-            // تحديث القائمة للبقية في الغرفة
-            io.to(room).emit('updateUserList', getPlayersInRoom(room));
-        }
+        delete users[socket.id];
+        io.emit('updateUserList', users);
     });
 });
 
-// دالة مساعدة للحصول على لاعبي غرفة محددة فقط
-function getPlayersInRoom(room) {
-    let roomUsers = {};
-    for (let id in users) {
-        if (users[id].room === room) {
-            roomUsers[id] = users[id];
-        }
-    }
-    return roomUsers;
-}
-
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 http.listen(PORT, () => {
-    console.log(`✅ السيرفر يعمل بنظام الغرف على المنفذ: ${PORT}`);
+    console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
 });
-
