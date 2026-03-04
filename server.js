@@ -4,19 +4,16 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const path = require('path');
 
-app.use(express.static(__dirname));
+// ابحث عن هذا السطر في server.js
+app.use(express.static(__dirname)); 
 
-// مخازن البيانات لكل غرفة بشكل منفصل
-let users = {}; 
-let roomBuzzerStatus = {}; // لتتبع حالة قفل البوزر في كل غرفة
+// واستبدله بهذا السطر لضمان الوصول لملف index.html
+app.use(express.static(path.join(__dirname, '/')));
 
-io.on('connection', (socket) => {
-    
-    // 1. عند انضمام الإدمن أو اللاعب لغرفة
-    socket.on('joinRoom', (room) => {
-        socket.join(room);
-        console.log(`Socket ${socket.id} joined room: ${room}`);
-    });
+// وأضف هذا الجزء تحت الأوامر السابقة مباشرة
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
     // 2. تسجيل المستخدم في غرفة وفريق محدد
     socket.on('registerUser', (data) => {
@@ -92,3 +89,4 @@ const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
     console.log(`✅ السيرفر يعمل بنظام الغرف على المنفذ: ${PORT}`);
 });
+
