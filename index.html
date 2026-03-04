@@ -1,29 +1,127 @@
-<div id="room-display" style="position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); padding: 5px 15px; border-radius: 20px; border: 1px solid #7c4dff; display: none; z-index: 9999;">
-    <span style="color: #aaa; font-size: 12px;">الغرفة الحالية: </span>
-    <span id="current-room-id" style="color: #00e676; font-weight: bold;">#---</span>
-</div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لعبة حروف - نظام الغرف</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root { --maroon: #b71c1c; --orange: #ef6c00; --bg: #121212; }
+        body { font-family: 'Cairo', sans-serif; background: var(--bg); color: white; margin: 0; overflow-x: hidden; }
+        
+        /* مؤشر الغرفة الحالية */
+        #room-indicator {
+            position: fixed; top: 15px; left: 15px; background: rgba(124, 77, 255, 0.2);
+            padding: 8px 15px; border-radius: 30px; border: 1px solid #7c4dff;
+            display: none; font-size: 14px; z-index: 1000;
+        }
 
-<script>
-    // داخل دالة login ودالة setupAdminRoom أضف هذا السطر:
-    function updateRoomUI(room) {
-        const display = document.getElementById('room-display');
-        const text = document.getElementById('current-room-id');
-        text.innerText = "#" + room;
-        display.style.display = 'block';
-    }
+        .container { max-width: 500px; margin: 50px auto; padding: 20px; text-align: center; }
+        .input-field {
+            width: 100%; padding: 15px; margin: 10px 0; border-radius: 10px;
+            border: 2px solid #333; background: #1e1e1e; color: white; text-align: center;
+        }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-maroon { background: var(--maroon); color: white; }
+        .btn-orange { background: var(--orange); color: white; }
+        
+        #admin-panel, #game-view, #player-wait { display: none; }
+        .team-lists { display: flex; gap: 10px; margin-top: 20px; }
+        .team-card { flex: 1; background: #1e1e1e; padding: 10px; border-radius: 10px; border: 1px solid #333; }
+    </style>
+</head>
+<body>
 
-    // استدعِ الدالة عند تسجيل الدخول بنجاح
-    function login(team) {
-        const room = document.getElementById('room-code').value;
-        // ... (باقي الكود السابق) ...
-        updateRoomUI(room);
-        socket.emit('registerUser', {name, team, room});
-    }
+    <div id="room-indicator">الغرفة: <span id="display-room-id" style="color:#00e676">#---</span></div>
 
-    function setupAdminRoom() {
-        const room = document.getElementById('admin-room').value;
-        // ... (باقي الكود السابق) ...
-        updateRoomUI(room);
-        socket.emit('joinRoom', room);
-    }
-</script>
+    <div id="login-screen" class="container">
+        <h1>🎮 انضم للمسابقة</h1>
+        <input type="text" id="room-id" class="input-field" placeholder="أدخل رمز الغرفة (مثلاً: 555)">
+        <input type="text" id="user-name" class="input-field" placeholder="اسمك المستعار">
+        <button class="btn btn-maroon" onclick="joinGame('الخمري')">انضم للفريق الخمري</button>
+        <button class="btn btn-orange" onclick="joinGame('البرتقالي')">انضم للفريق البرتقالي</button>
+        <hr style="margin: 20px 0; border: 0.5px solid #333;">
+        <button onclick="showAdminSetup()" style="background:none; color:#7c4dff; border:none; cursor:pointer">إعداد كمسؤول (شاشة العرض)</button>
+    </div>
+
+    <div id="admin-setup" class="container" style="display:none">
+        <h1>🖥️ شاشة العرض</h1>
+        <input type="text" id="admin-room-id" class="input-field" placeholder="أدخل رمز الغرفة للمراقبة">
+        <button class="btn" style="background:#7c4dff; color:white" onclick="startAdmin()">تفعيل الغرفة 🔑</button>
+    </div>
+
+    <div id="admin-panel" class="container">
+        <button class="btn" style="background:#00e676" onclick="triggerStart()">بدء الجولة الآن</button>
+        <div class="team-lists">
+            <div class="team-card"><h3>الخمري</h3><ul id="list-maroon"></ul></div>
+            <div class="team-card"><h3>البرتقالي</h3><ul id="list-orange"></ul></div>
+        </div>
+    </div>
+
+    <div id="player-wait" class="container">
+        <h2 id="status-text">تم الانضمام.. بانتظار المضيف لفتح اللوحة</h2>
+    </div>
+
+    <script>
+        const socket = io();
+        let myRoom = "";
+
+        function joinGame(team) {
+            const room = document.getElementById('room-id').value;
+            const name = document.getElementById('user-name').value;
+            if(!room || !name) return alert("يرجى إكمال البيانات");
+            
+            myRoom = room;
+            setRoomUI(room);
+            socket.emit('registerUser', {name, team, room});
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('player-wait').style.display = 'block';
+        }
+
+        function showAdminSetup() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('admin-setup').style.display = 'block';
+        }
+
+        function startAdmin() {
+            const room = document.getElementById('admin-room-id').value;
+            if(!room) return alert("أدخل رمز الغرفة");
+            
+            myRoom = room;
+            setRoomUI(room);
+            socket.emit('joinRoom', room);
+            document.getElementById('admin-setup').style.display = 'none';
+            document.getElementById('admin-panel').style.display = 'block';
+        }
+
+        function setRoomUI(room) {
+            document.getElementById('display-room-id').innerText = "#" + room;
+            document.getElementById('room-indicator').style.display = 'block';
+        }
+
+        function triggerStart() {
+            socket.emit('startGridGame', myRoom);
+            alert("تم إرسال أمر البدء لجميع لاعبي الغرفة!");
+        }
+
+        socket.on('updateUserList', (users) => {
+            const mList = document.getElementById('list-maroon');
+            const oList = document.getElementById('list-orange');
+            if(!mList) return;
+            mList.innerHTML = ''; oList.innerHTML = '';
+            for(let id in users) {
+                let li = document.createElement('li');
+                li.innerText = users[id].name;
+                if(users[id].team === 'الخمري') mList.appendChild(li);
+                else oList.appendChild(li);
+            }
+        });
+
+        socket.on('gameStarted', () => {
+            document.getElementById('status-text').innerText = "بدأت اللعبة! استعد للضغط";
+            document.body.style.background = "#1a237e"; // تغيير اللون للتنبيه
+        });
+    </script>
+</body>
+</html>
