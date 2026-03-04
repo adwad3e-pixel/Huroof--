@@ -10,7 +10,6 @@
     
     <style>
         :root {
-            /* ألوان الصفحة الثانية (كما طلبت - ثابتة) */
             --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
             --hex-width: 160px; 
             --hex-height: 184px;
@@ -32,7 +31,7 @@
         
         #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
 
-        /* --- تصميم لوحة التحكم: النيون المظلم (الخيار 1) --- */
+        /* لوحة التحكم */
         #admin-view { max-width: 1200px; margin: 0 auto; color: #fff; }
         #admin-view h1 { text-align: center; color: #fff; font-weight: 700; margin-bottom: 30px; text-shadow: 0 0 10px #7c4dff; }
 
@@ -66,7 +65,7 @@
         .btn-start { background-color: #00e676; color: #000; box-shadow: 0 0 15px rgba(0,230,118,0.5); }
         .btn-reset { background-color: #ff1744; color: white; box-shadow: 0 0 15px rgba(255,23,68,0.5); }
 
-        /* --- تصميم صفحة الحروف (كما كانت تماماً) --- */
+        /* شاشة اللعبة */
         #game-grid-view { background: var(--grid-bg); flex-direction: column; align-items: center; min-height: 100vh; }
         .scoreboard { 
             display: flex; gap: 40px; margin-bottom: 20px; 
@@ -95,7 +94,7 @@
         .btn-rename { background: #03a9f4; color: white; }
         .btn-reset-score { background: #e91e63; color: white; }
 
-        /* --- صفحة المشارك (كما كانت تماماً) --- */
+        /* شاشة المتسابق */
         #participant-view { padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
         .login-wrapper {
             width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px;
@@ -112,10 +111,8 @@
         .choice-btn:active { transform: scale(0.98); }
         .btn-maroon { background: linear-gradient(135deg, #b71c1c, #880e4f); color: white; border-bottom: 4px solid #560000; }
         .btn-orange { background: linear-gradient(135deg, #ff9800, #e65100); color: white; border-bottom: 4px solid #a53200; }
-        #game-area { margin-top: 30px; }
-        .wait-text { color: #aaa; font-size: 18px; margin-top: 10px; }
         
-        /* --- البوزر (تحديث حجم الخط وشاشة القفل) --- */
+        /* البوزر */
         #buzzer-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: white; color: black; z-index: 10000; justify-content: center; 
@@ -129,33 +126,52 @@
 <body>
 
     <div id="buzzer-overlay">اضغط!</div>
-    
     <audio id="buzzer-sound" src="https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg" preload="auto"></audio>
 
     <div id="admin-view">
         <h1>🎮 لوحة التحكم</h1>
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
         <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
+        
         <div class="teams-container">
             <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
             <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+        </div>
+
+        <div id="instructions-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; font-family: 'Cairo'; background-color: #111; border-radius: 15px; margin: 40px auto; max-width: 1000px; border: 1px solid #333; direction: rtl;">
+            <div class="lang-ar" style="flex: 1; min-width: 280px; text-align: right; border-right: 4px solid #3498db; padding-right: 15px;">
+                <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px; font-family: 'El Messiri';">🎮 كيف تلعب "لعبة حروف"؟</h2>
+                <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
+                    <li style="margin-bottom: 8px;"><strong>💻 شاشة العرض:</strong> افتح هذا الرابط من جهاز الكمبيوتر لترى خلية الحروف.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 أجهزة المتسابقين:</strong> يفتح كل متسابق نفس الرابط من جواله.</li>
+                    <li style="margin-bottom: 8px;"><strong>❓ الأسئلة:</strong> عند قول المقدم السؤال، أسرع متسابق يضغط سيظهر وميض لعشر ثوانٍ للإجابة.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 الهدف:</strong> إيصال اللون ببعضه البعض (أفقياً أو عمودياً).</li>
+                </ul>
+            </div>
+            <div class="lang-en" style="flex: 1; min-width: 280px; direction: ltr; text-align: left; border-left: 4px solid #3498db; padding-left: 15px;">
+                <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px;">🎮 How to play?</h2>
+                <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
+                    <li style="margin-bottom: 8px;"><strong>💻 Display:</strong> Open link on PC for the grid.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 Contestants:</strong> Open link on mobiles to join.</li>
+                    <li style="margin-bottom: 8px;"><strong>⚡ Speed:</strong> Fastest one to press buzzer gets 10s to answer.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 Goal:</strong> Connect your color from side to side.</li>
+                </ul>
+            </div>
         </div>
     </div>
 
     <div id="game-grid-view">
         <div class="scoreboard">
-            <div onclick="incrementScore(1)" class="team-container-box" style="color: var(--maroon-team); text-shadow: 0 0 10px rgba(207,102,121,0.5);">
+            <div onclick="incrementScore(1)" class="team-container-box" style="color: var(--maroon-team);">
                 <span id="team-name-1" class="team-name-text">الفريق الخمري</span>
                 <span id="score-1" class="team-score">0</span>
             </div>
-            <div onclick="incrementScore(2)" class="team-container-box" style="color: var(--orange-team); text-shadow: 0 0 10px rgba(255,183,77,0.5);">
+            <div onclick="incrementScore(2)" class="team-container-box" style="color: var(--orange-team);">
                 <span id="team-name-2" class="team-name-text">الفريق البرتقالي</span>
                 <span id="score-2" class="team-score">0</span>
             </div>
         </div>
-
         <div class="honeycomb" id="grid"></div>
-
         <div class="controls">
             <div class="control-group">
                 <button class="pg2-btn btn-reset-score" onclick="resetScoresOnly()">تصفير النتائج 🔢</button>
@@ -176,7 +192,6 @@
             <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
             <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
         </div>
-        
         <div id="game-area" style="display:none;" class="login-wrapper">
             <h1 style="color:white; font-family:'El Messiri'; font-size: 24px;">🎉 تم التسجيل بنجاح!</h1>
             <p class="wait-text">انتظر بدء الجولة من لوحة التحكم...</p>
@@ -189,16 +204,13 @@
         let scoreTeam1 = 0, scoreTeam2 = 0;
         const buzzerOverlay = document.getElementById('buzzer-overlay');
         const buzzerSound = document.getElementById('buzzer-sound');
-        let soundInterval;
-        let countdownInterval;
+        let soundInterval, countdownInterval;
 
         function showView(viewId) {
             document.getElementById('admin-view').style.display = 'none';
             document.getElementById('game-grid-view').style.display = 'none';
             document.getElementById('participant-view').style.display = 'none';
-            
             buzzerOverlay.style.display = 'none'; 
-
             const target = document.getElementById(viewId);
             if(viewId === 'game-grid-view') target.style.display = 'flex';
             else target.style.display = 'block';
@@ -300,18 +312,8 @@
             const board = Array.from(hexes).map(h => parseInt(h.dataset.state));
             const matrix = [];
             for (let i = 0; i < 5; i++) matrix.push(board.slice(i * 5, i * 5 + 5));
-            for (let c = 0; c < 5; c++) {
-                if (matrix[0][c] === state) {
-                    let path = bfs(matrix, 0, c, state, 'V');
-                    if (path) return path;
-                }
-            }
-            for (let r = 0; r < 5; r++) {
-                if (matrix[r][4] === state) {
-                    let path = bfs(matrix, r, 4, state, 'H');
-                    if (path) return path;
-                }
-            }
+            for (let c = 0; c < 5; c++) if (matrix[0][c] === state) { let p = bfs(matrix, 0, c, state, 'V'); if (p) return p; }
+            for (let r = 0; r < 5; r++) if (matrix[r][4] === state) { let p = bfs(matrix, r, 4, state, 'H'); if (p) return p; }
             return null;
         }
 
@@ -323,9 +325,7 @@
                 if (type === 'V' && r === 4) return path;
                 if (type === 'H' && c === 0) return path;
                 const isEven = r % 2 === 0;
-                const dirs = isEven ? 
-                    [[-1,0], [-1,1], [0,-1], [0,1], [1,0], [1,1]] : 
-                    [[-1,-1], [-1,0], [0,-1], [0,1], [1,-1], [1,0]];
+                const dirs = isEven ? [[-1,0], [-1,1], [0,-1], [0,1], [1,0], [1,1]] : [[-1,-1], [-1,0], [0,-1], [0,1], [1,-1], [1,0]];
                 for (let [dr, dc] of dirs) {
                     let nR = r + dr, nC = c + dc;
                     if (nR >= 0 && nR < 5 && nC >= 0 && nC < 5 && matrix[nR][nC] === state && !visited.has(`${nR},${nC}`)) {
@@ -370,32 +370,25 @@
             }
         });
 
-        buzzerOverlay.onclick = function() {
-            socket.emit('pressBuzzer');
-        };
+        buzzerOverlay.onclick = function() { socket.emit('pressBuzzer'); };
 
         socket.on('buzzerWinner', (winnerData) => {
             clearInterval(countdownInterval);
             if (socket.id === winnerData.id) {
                 soundInterval = setInterval(() => {
                     buzzerSound.currentTime = 0;
-                    buzzerSound.play().catch(e => console.error("Sound error:", e));
+                    buzzerSound.play().catch(e => console.error(e));
                 }, 150);
-                
                 buzzerOverlay.classList.add('flash-red-active');
                 buzzerOverlay.innerText = 'أنت الأسرع!';
             } else {
                 let timeLeft = 10;
                 buzzerOverlay.style.pointerEvents = 'none'; 
                 buzzerOverlay.innerText = timeLeft;
-
                 countdownInterval = setInterval(() => {
                     timeLeft -= 1;
-                    if (timeLeft > 0) {
-                        buzzerOverlay.innerText = timeLeft;
-                    } else {
-                        clearInterval(countdownInterval);
-                    }
+                    if (timeLeft > 0) buzzerOverlay.innerText = timeLeft;
+                    else clearInterval(countdownInterval);
                 }, 1000);
             }
         });
@@ -404,11 +397,9 @@
             clearInterval(countdownInterval);
             clearInterval(soundInterval); 
             buzzerSound.pause();
-            buzzerSound.currentTime = 0;
             if (window.innerWidth <= 768) {
                 buzzerOverlay.style.display = 'flex';
                 buzzerOverlay.style.backgroundColor = 'white';
-                buzzerOverlay.style.color = 'black';
                 buzzerOverlay.classList.remove('flash-red-active');
                 buzzerOverlay.innerText = 'اضغط!';
                 buzzerOverlay.style.pointerEvents = 'auto';
