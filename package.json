@@ -1,0 +1,8 @@
+{
+  "name": "buzzer-system",
+  "version": "1.0.0",
+  "dependencies": {
+    "express": "^4.22.1",
+    "socket.io": "^4.8.3"
+  }
+}
