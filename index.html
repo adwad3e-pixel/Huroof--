@@ -188,7 +188,12 @@
     <div id="participant-view">
         <div class="login-wrapper" id="login-area">
             <h1 class="login-title">💡 تسجيل الدخول</h1>
-            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك الكريم...">
+            
+    <div style="margin-bottom:12px; text-align:center;">
+      <input type="text" id="roomCode" class="input-name" placeholder="أدخل كود الغرفة" style="max-width:220px; display:inline-block; margin-left:8px;">
+      <button class="choice-btn" style="display:inline-block; padding:10px 14px; font-size:14px;" onclick="joinRoom()">🔑 دخول الغرفة</button>
+    </div>
+<input type="text" id="username" class="input-name" placeholder="أدخل اسمك الكريم...">
             <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
             <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
         </div>
@@ -200,6 +205,25 @@
 
     <script>
         const socket = io();
+
+  let currentRoom = null;
+
+  function joinRoom(){
+    const code = document.getElementById("roomCode").value.trim();
+    if(!code){ alert("أدخل كود الغرفة"); return; }
+    socket.emit("joinRoomWithCode", code);
+  }
+
+  socket.on("roomJoined",(code)=>{
+    currentRoom = code;
+    alert("تم الدخول إلى الغرفة: " + code);
+  });
+
+  socket.on("roomError",(msg)=>{
+    alert(msg || "فشل الدخول إلى الغرفة");
+  });
+
+
         const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
         let scoreTeam1 = 0, scoreTeam2 = 0;
         const buzzerOverlay = document.getElementById('buzzer-overlay');
@@ -337,10 +361,24 @@
             return null;
         }
 
-        function login(team) {
-            let name = document.getElementById('username').value;
-            if(!name) return alert("الرجاء إدخال اسمك!");
-            socket.emit('registerUser', {name, team});
+        function login(team){
+  if(!currentRoom){
+    alert("يجب إدخال كود الغرفة أولاً");
+    return;
+  }
+  const usernameEl = document.getElementById("username");
+  const username = usernameEl ? usernameEl.value.trim() : "";
+  if(!username){
+    alert("أدخل اسمك");
+    return;
+  }
+  socket.emit("registerUser",{
+    name: username,
+    team: team
+  });
+  if (document.getElementById('login-area')) document.getElementById('login-area').style.display = 'none';
+  if (document.getElementById('game-area')) document.getElementById('game-area').style.display = 'block';
+});
             document.getElementById('login-area').style.display = 'none';
             document.getElementById('game-area').style.display = 'block';
         }
