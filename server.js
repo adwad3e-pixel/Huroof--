@@ -8,21 +8,21 @@ app.use(express.static(__dirname));
 
 let users = {};
 let buzzerLocked = false; 
-// إنشاء كود عشوائي من 4 أرقام عند تشغيل السيرفر
+// كود الغرفة يتغير تلقائياً عند كل تشغيل للسيرفر
 const GAME_ROOM_CODE = Math.floor(1000 + Math.random() * 9000).toString();
 
 io.on('connection', (socket) => {
-    // إرسال الكود للمسؤول عند اتصاله
+    // إرسال الكود للمسؤول فقط
     socket.emit('adminCode', GAME_ROOM_CODE);
 
-    // تسجيل المستخدم مع التحقق من الكود
     socket.on('registerUser', (data) => {
+        // التحقق من الكود قبل تسجيل الدخول
         if (data.code === GAME_ROOM_CODE) {
             users[socket.id] = { name: data.name, team: data.team };
             socket.emit('loginSuccess');
             io.emit('updateUserList', users);
         } else {
-            socket.emit('loginError', '❌ كود الغرفة غير صحيح!');
+            socket.emit('loginError', 'كود الغرفة غير صحيح!');
         }
     });
 
@@ -34,7 +34,6 @@ io.on('connection', (socket) => {
         if (!buzzerLocked) {
             buzzerLocked = true; 
             io.emit('buzzerWinner', { id: socket.id });
-
             setTimeout(() => {
                 buzzerLocked = false;
                 io.emit('buzzerAutoReset'); 
@@ -56,6 +55,6 @@ io.on('connection', (socket) => {
 
 const PORT = 3000;
 http.listen(PORT, () => {
-    console.log(`✅ السيرفر يعمل على: http://localhost:${PORT}`);
-    console.log(`🔑 كود الغرفة الحالي هو: ${GAME_ROOM_CODE}`);
+    console.log(`✅ السيرفر يعمل: http://localhost:${PORT}`);
+    console.log(`🔑 كود الغرفة: ${GAME_ROOM_CODE}`);
 });
