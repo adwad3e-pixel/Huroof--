@@ -20,8 +20,6 @@
             --color-2-end: #880e4f;
             --color-3-start: #ff9800; 
             --color-3-end: #e65100;
-            --color-4-start: rgba(255, 255, 255, 0.1); 
-            --color-4-end: rgba(255, 255, 255, 0.05);
             --maroon-team: #cf6679;
             --orange-team: #ffb74d;
         }
@@ -46,6 +44,19 @@
         .team-list { list-style: none; padding: 0; }
         .team-list li { background: #222; margin: 5px 0; padding: 10px; border-radius: 5px; color: #00e676; }
 
+        /* تنسيق صندوق الشرح الجديد */
+        .instruction-box {
+            background: rgba(124, 77, 255, 0.15);
+            border-right: 5px solid #7c4dff;
+            padding: 20px;
+            margin-top: 25px;
+            border-radius: 10px;
+            text-align: right;
+            line-height: 1.8;
+        }
+        .instruction-box h3 { margin-top: 0; color: #7c4dff; font-size: 18px; }
+        .instruction-box ul { margin-bottom: 0; padding-right: 20px; }
+
         .admin-btn { width: 100%; padding: 15px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 10px; font-family: 'Cairo'; }
         .btn-start { background-color: #00e676; color: #000; }
         .btn-reset { background-color: #ff1744; color: white; }
@@ -64,6 +75,14 @@
         .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
+
+        /* أنيميشن النبض */
+        .pulse-animation { animation: hexPulse 0.5s ease-out; }
+        @keyframes hexPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); filter: brightness(1.4); }
+            100% { transform: scale(1); }
+        }
         
         .controls { display: flex; justify-content: center; gap: 20px; width: 100%; padding-bottom: 20px; flex-wrap: wrap; }
         .pg2-btn { padding: 12px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; }
@@ -98,6 +117,16 @@
         <div class="teams-container">
             <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
             <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+        </div>
+
+        <div class="instruction-box">
+            <h3>📖 دليل الاستخدام السريع:</h3>
+            <ul>
+                <li><strong>الخطوة 1:</strong> اضغط على "توليد رقم غرفة جديد" وأعطه للمتسابقين.</li>
+                <li><strong>الخطوة 2:</strong> انتظر ظهور أسماء اللاعبين في القوائم أعلاه.</li>
+                <li><strong>الخطوة 3:</strong> اضغط "بدء جولة لوحة الحروف" للانتقال لشاشة اللعب وتفعيل البوزر لدى المتسابقين.</li>
+                <li><strong>في شاشة اللعب:</strong> اضغط على الحرف مرة واحدة لتحويله للون الأصفر، مرتين للأحمر، وثلاث مرات للبرتقالي.</li>
+            </ul>
         </div>
     </div>
 
@@ -155,7 +184,6 @@
         if (window.innerWidth > 768) showView('admin-view');
         else showView('participant-view');
 
-        // وظائف الإدمن
         function generateRoom() {
             currentRoom = Math.floor(1000 + Math.random() * 9000).toString();
             document.getElementById('room-display').innerText = currentRoom;
@@ -183,14 +211,14 @@
                 container.onclick = () => {
                     let s = (parseInt(hex.dataset.state) + 1) % 4;
                     hex.dataset.state = s;
-                    hex.className = `hex state-${s}`;
+                    hex.className = `hex state-${s} pulse-animation`;
+                    setTimeout(() => hex.classList.remove('pulse-animation'), 500);
                 };
                 container.appendChild(hex);
                 grid.appendChild(container);
             });
         }
 
-        // وظائف اللاعب
         function login(team) {
             const name = document.getElementById('username').value;
             const room = document.getElementById('room-number').value;
@@ -202,7 +230,6 @@
             document.getElementById('joined-room-id').innerText = room;
         }
 
-        // التحكم والسكور
         function incrementScore(t) {
             if(t===1) { score1++; document.getElementById('score-1').innerText = score1; }
             else { score2++; document.getElementById('score-2').innerText = score2; }
@@ -221,7 +248,6 @@
         function celebrate() { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
         function resetGameServer() { socket.emit('resetGame'); }
 
-        // أحداث السوكيت
         socket.on('updateUserList', (users) => {
             const mList = document.getElementById('team-maroon');
             const oList = document.getElementById('team-orange');
@@ -267,4 +293,3 @@
     </script>
 </body>
 </html>
-
