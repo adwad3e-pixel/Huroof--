@@ -24,6 +24,7 @@
         
         #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
 
+        /* لوحة التحكم */
         .room-generator {
             background: rgba(124, 77, 255, 0.1); padding: 20px; border-radius: 15px;
             border: 2px solid #7c4dff; margin-bottom: 30px; text-align: center;
@@ -35,7 +36,7 @@
         .team-list { list-style: none; padding: 0; }
         .team-list li { background: #222; margin: 5px 0; padding: 10px; border-radius: 5px; color: #00e676; border-right: 3px solid #00e676; }
 
-        .admin-btn { width: 100%; padding: 15px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 10px; border-radius: 8px; font-family: 'Cairo'; }
+        .admin-btn { width: 100%; padding: 15px; font-size: 18px; border: none; cursor: pointer; font-weight: bold; margin-bottom: 10px; border-radius: 8px; font-family: 'Cairo'; transition: 0.3s; }
         .btn-start { background-color: #00e676; color: #000; }
         .btn-reset { background-color: #ff1744; color: white; }
 
@@ -65,9 +66,9 @@
 
     <div id="admin-view">
         <div class="room-generator">
-            <h2>🔑 نظام الغرف الذكي</h2>
+            <h2 style="font-family: 'El Messiri';">🔑 نظام الغرف الذكي</h2>
             <div id="room-display">----</div>
-            <button class="admin-btn" style="background:#7c4dff; color:white" onclick="generateRoom()">توليد رقم غرفة جديد 🎲</button>
+            <button class="admin-btn" style="background:#7c4dff; color:white; width: auto; padding: 10px 30px;" onclick="generateRoom()">توليد رقم غرفة جديد 🎲</button>
         </div>
 
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء جولة لوحة الحروف</button>
@@ -82,18 +83,22 @@
             <div class="lang-ar" style="flex: 1; min-width: 300px; direction: rtl; text-align: right; border-right: 4px solid #3498db; padding-right: 15px;">
                 <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 15px; font-family: 'El Messiri';">🎮 كيف تلعب "لعبة حروف"؟</h2>
                 <ul style="list-style: none; padding: 0; line-height: 1.8; color: #ccc;">
-                    <li style="margin-bottom: 10px;"><strong>💻 شاشة العرض:</strong> افتح الرابط من الكمبيوتر لترى خلية الحروف.</li>
-                    <li style="margin-bottom: 10px;"><strong>📱 أجهزة المتسابقين:</strong> يفتح كل متسابق الرابط من جواله الخاص.</li>
-                    <li style="margin-bottom: 10px;"><strong>⚡ السرعة:</strong> أسرع متسابق يضغط سيظهر وميض لعشر ثوانٍ للإجابة.</li>
-                    <li style="margin-bottom: 10px;"><strong>🏆 الهدف:</strong> إيصال اللون ببعضه البعض أفقياً أو عمودياً.</li>
+                    <li style="margin-bottom: 10px;"><strong>💻 شاشة العرض:</strong> افتح هذا الرابط من جهاز الكمبيوتر لترى خلية الحروف.</li>
+                    <li style="margin-bottom: 10px;"><strong>📱 أجهزة المتسابقين (الجوال):</strong> يفتح كل متسابق نفس الرابط من جواله الخاص.</li>
+                    <li style="margin-bottom: 10px;"><strong>❓ الأسئلة:</strong> عند قول المقدم السؤال (يمكنك الحصول على الأسئلة من **ChatGPT** أو أي موقع آخر من اختيارك).</li>
+                    <li style="margin-bottom: 10px;"><strong>⚡ السرعة:</strong> أسرع متسابق يضغط على الشاشة سيظهر وميض لعشر ثوانٍ وهي المدة لكي يجاوب على السؤال.</li>
+                    <li style="margin-bottom: 10px;"><strong>🏆 الهدف:</strong> إيصال اللون ببعضه البعض سواء من اليمين إلى اليسار أو من الأعلى للأسفل.</li>
                 </ul>
             </div>
+
             <div class="lang-en" style="flex: 1; min-width: 300px; direction: ltr; text-align: left; border-left: 4px solid #3498db; padding-left: 15px;">
-                <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 15px;">🎮 How to play?</h2>
+                <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 15px;">🎮 How to play "Huroof Game"?</h2>
                 <ul style="list-style: none; padding: 0; line-height: 1.8; color: #ccc;">
-                    <li><strong>💻 Display:</strong> Open on PC for the grid.</li>
-                    <li><strong>📱 Mobile:</strong> Players join via phone.</li>
-                    <li><strong>⚡ Speed:</strong> Fastest player gets 10s to answer.</li>
+                    <li style="margin-bottom: 10px;"><strong>💻 Display Screen:</strong> Open this link from a computer to see the letter grid.</li>
+                    <li style="margin-bottom: 10px;"><strong>📱 Contestants' devices (Mobile):</strong> Each contestant opens the same link from their own mobile.</li>
+                    <li style="margin-bottom: 10px;"><strong>❓ Questions:</strong> Use questions from **ChatGPT** or any other site of your choice.</li>
+                    <li style="margin-bottom: 10px;"><strong>⚡ Speed:</strong> Fastest contestant to press the screen will see a flash for 10 seconds.</li>
+                    <li style="margin-bottom: 10px;"><strong>🏆 Goal:</strong> Connecting the color to each other (Horizontal or Vertical).</li>
                 </ul>
             </div>
         </div>
@@ -116,16 +121,16 @@
     </div>
 
     <div id="participant-view">
-        <div class="login-wrapper" id="login-area" style="background:#1e1e1e; padding:30px; border-radius:20px; text-align:center;">
-            <h1>💡 انضم للمسابقة</h1>
-            <input type="number" id="room-number" placeholder="رقم الغرفة" style="width:100%; padding:15px; margin-bottom:10px; border-radius:10px;">
-            <input type="text" id="username" placeholder="اسمك" style="width:100%; padding:15px; margin-bottom:10px; border-radius:10px;">
+        <div class="login-wrapper" id="login-area" style="background:#1e1e1e; padding:30px; border-radius:20px; text-align:center; border: 1px solid #333;">
+            <h1 style="font-family:'El Messiri'">💡 انضم للمسابقة</h1>
+            <input type="number" id="room-number" class="admin-btn" placeholder="رقم الغرفة" style="background: #2c2c2c; color: white; cursor: text;">
+            <input type="text" id="username" class="admin-btn" placeholder="اسمك الكريم" style="background: #2c2c2c; color: white; cursor: text;">
             <button class="admin-btn" style="background:linear-gradient(135deg, #b71c1c, #880e4f); color:white" onclick="login('الخمري')">الفريق الخمري</button>
             <button class="admin-btn" style="background:linear-gradient(135deg, #ff9800, #e65100); color:white" onclick="login('البرتقالي')">الفريق البرتقالي</button>
         </div>
         <div id="game-area" style="display:none; text-align:center;">
-            <h2 color="#00e676">تم الاتصال! ✅</h2>
-            <p>الغرفة: <span id="joined-room-id"></span></p>
+            <h2 style="color:#00e676">تم الاتصال! ✅</h2>
+            <p>الغرفة: <span id="joined-room-id" style="font-weight:bold; color:#7c4dff"></span></p>
         </div>
     </div>
 
@@ -140,7 +145,8 @@
             document.getElementById('game-grid-view').style.display = 'none';
             document.getElementById('participant-view').style.display = 'none';
             const target = document.getElementById(viewId);
-            target.style.display = (viewId === 'game-grid-view') ? 'flex' : 'block';
+            if (viewId === 'game-grid-view') target.style.display = 'flex';
+            else target.style.display = 'block';
         }
 
         if (window.innerWidth > 768) showView('admin-view');
@@ -153,7 +159,7 @@
         }
 
         function startTheGame() {
-            if(!currentRoom) return alert("ولد رقم غرفة أولاً");
+            if(!currentRoom) return alert("يرجى توليد رقم غرفة للمسؤول أولاً");
             showView('game-grid-view');
             createGrid();
             socket.emit('startGridGame');
@@ -217,6 +223,7 @@
         socket.on('showBuzzerScreen', () => {
             if (window.innerWidth <= 768) {
                 document.getElementById('buzzer-overlay').style.display = 'flex';
+                document.getElementById('buzzer-overlay').innerText = 'اضغط!';
             }
         });
 
@@ -228,7 +235,7 @@
                 b.innerText = 'أنت الأسرع! ⚡';
                 b.classList.add('flash-active');
             } else {
-                b.innerText = 'فاز: ' + data.name;
+                b.innerText = 'فاز المتسابق: ' + data.name;
                 b.classList.remove('flash-active');
             }
         });
@@ -236,7 +243,7 @@
         socket.on('buzzerAutoReset', () => {
             const b = document.getElementById('buzzer-overlay');
             if (window.innerWidth <= 768) {
-                b.innerText = 'اضغط الآن!';
+                b.innerText = 'اضغط!';
                 b.classList.remove('flash-active');
             }
         });
