@@ -77,21 +77,16 @@
         .team-container-box { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; position: relative; }
         .team-name-text { font-size: 32px; margin: 0; }
         .team-score { font-family: 'El Messiri', sans-serif; font-size: 64px; line-height: 1; }
-        
-        /* نظام الخلية الخاص بك كما هو */
         .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; margin-bottom: 50px; }
         .hex-container { width: var(--hex-width); height: var(--hex-height); position: relative; cursor: pointer; }
         .hex-container:nth-child(10n+6), .hex-container:nth-child(10n+7), .hex-container:nth-child(10n+8), .hex-container:nth-child(10n+9), .hex-container:nth-child(10n+10) { transform: translateX(calc(var(--hex-width) / 2 + var(--hex-gap) / 2)); }
         .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; transition: all 0.3s ease; }
-        
         @keyframes winPulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(1); filter: brightness(1); } }
         .win-highlight { animation: winPulse 0.7s infinite ease-in-out !important; z-index: 10; }
-        
         .state-0 { background: linear-gradient(135deg, var(--color-4-start), var(--color-4-end)); color: white; }
         .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
-        
         .controls { display: flex; justify-content: space-between; width: 95%; max-width: 1200px; margin-top: auto; padding-bottom: 20px; }
         .control-group { display: flex; gap: 15px; }
         .pg2-btn { padding: 12px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; }
@@ -138,30 +133,30 @@
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
         <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
         
-        <div id="instructions-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; font-family: 'Cairo'; background-color: #111; border-radius: 15px; margin: 25px auto; max-width: 1000px; border: 1px solid #333; direction: rtl;">
+        <div class="teams-container">
+            <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
+            <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
+        </div>
+
+        <div id="instructions-container" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; padding: 20px; font-family: 'Cairo'; background-color: #111; border-radius: 15px; margin: 40px auto; max-width: 1000px; border: 1px solid #333; direction: rtl;">
             <div class="lang-ar" style="flex: 1; min-width: 280px; text-align: right; border-right: 4px solid #3498db; padding-right: 15px;">
                 <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px; font-family: 'El Messiri';">🎮 كيف تلعب "لعبة حروف"؟</h2>
                 <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
-                    <li style="margin-bottom: 8px;"><strong>💻 شاشة العرض:</strong> افتح الرابط من الكمبيوتر لمشاهدة الخلية.</li>
-                    <li style="margin-bottom: 8px;"><strong>📱 المتسابقون:</strong> الدخول من الجوال للتسجيل في الفرق.</li>
-                    <li style="margin-bottom: 8px;"><strong>❓ الأسئلة:</strong> عند طرح السؤال، أسرع متسابق يضغط يحصل على 10 ثوانٍ.</li>
-                    <li style="margin-bottom: 8px;"><strong>🏆 الهدف:</strong> تكوين مسار متصل بلون فريقك (أفقي أو عمودي).</li>
+                    <li style="margin-bottom: 8px;"><strong>💻 شاشة العرض:</strong> افتح هذا الرابط من جهاز الكمبيوتر لترى خلية الحروف.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 أجهزة المتسابقين:</strong> يفتح كل متسابق نفس الرابط من جواله.</li>
+                    <li style="margin-bottom: 8px;"><strong>❓ الأسئلة:</strong> عند قول المقدم السؤال، أسرع متسابق يضغط سيظهر وميض لعشر ثوانٍ للإجابة.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 الهدف:</strong> إيصال اللون ببعضه البعض (أفقياً أو عمودياً).</li>
                 </ul>
             </div>
             <div class="lang-en" style="flex: 1; min-width: 280px; direction: ltr; text-align: left; border-left: 4px solid #3498db; padding-left: 15px;">
                 <h2 style="color: #fff; font-size: 1.3rem; margin-bottom: 15px;">🎮 How to play?</h2>
                 <ul style="list-style: none; padding: 0; line-height: 1.6; color: #ccc; font-size: 14px;">
-                    <li style="margin-bottom: 8px;"><strong>💻 PC:</strong> Use a computer for the main display.</li>
-                    <li style="margin-bottom: 8px;"><strong>📱 Mobiles:</strong> Players join teams via phone.</li>
-                    <li style="margin-bottom: 8px;"><strong>⚡ Speed:</strong> Fastest player gets a 10s window to answer.</li>
-                    <li style="margin-bottom: 8px;"><strong>🏆 Goal:</strong> Connect your color path across the grid.</li>
+                    <li style="margin-bottom: 8px;"><strong>💻 Display:</strong> Open link on PC for the grid.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 Contestants:</strong> Open link on mobiles to join.</li>
+                    <li style="margin-bottom: 8px;"><strong>⚡ Speed:</strong> Fastest one to press buzzer gets 10s to answer.</li>
+                    <li style="margin-bottom: 8px;"><strong>🏆 Goal:</strong> Connect your color from side to side.</li>
                 </ul>
             </div>
-        </div>
-
-        <div class="teams-container">
-            <div class="team-box"><h2 style="color:var(--maroon-team)">الفريق الخمري</h2><ul id="team-maroon" class="team-list"></ul></div>
-            <div class="team-box"><h2 style="color:var(--orange-team)">الفريق البرتقالي</h2><ul id="team-orange" class="team-list"></ul></div>
         </div>
     </div>
 
