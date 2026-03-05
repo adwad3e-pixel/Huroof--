@@ -39,7 +39,6 @@
         .btn-start { background-color: #00e676; color: #000; }
         .btn-reset { background-color: #ff1744; color: white; }
 
-        /* شاشة اللعبة */
         #game-grid-view { background: var(--grid-bg); flex-direction: column; align-items: center; min-height: 100vh; }
         .scoreboard { display: flex; gap: 40px; margin-bottom: 20px; background: rgba(255,255,255,0.05); padding: 15px 50px; border-radius: 60px; border: 1px solid rgba(255,255,255,0.1); }
         .team-score { font-family: 'El Messiri'; font-size: 60px; line-height: 1; }
@@ -53,7 +52,6 @@
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
 
-        /* البوزر للمشترك */
         #buzzer-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; color: black; z-index: 10000; justify-content: center; align-items: center; font-size: 50px; font-weight: bold; text-align: center; }
         .flash-active { animation: strobe 0.15s infinite; }
         @keyframes strobe { 0%, 100% { background: red; color: white; } 50% { background: white; color: red; } }
@@ -63,7 +61,7 @@
 
     <div id="buzzer-overlay">اضغط الآن!</div>
 
-    <div id="admin-view" style="display: block;">
+    <div id="admin-view">
         <div class="room-generator">
             <h2 style="font-family: 'El Messiri'; margin: 0;">🔑 نظام الغرف</h2>
             <div id="room-display">----</div>
@@ -87,10 +85,11 @@
             <div class="lang-en" style="flex: 1; min-width: 300px; direction: ltr; text-align: left; border-left: 4px solid #3498db; padding-left: 15px;">
                 <h2 style="color: #fff; font-size: 1.5rem; margin-bottom: 15px;">🎮 How to play "Huroof Game"?</h2>
                 <ul style="list-style: none; padding: 0; line-height: 1.8; color: #ccc;">
-                    <li style="margin-bottom: 10px;"><strong>💻 Display Screen:</strong> Open this link from a computer to see the letter grid.</li>
-                    <li style="margin-bottom: 10px;"><strong>📱 Contestants:</strong> Each contestant opens the same link from their own mobile.</li>
-                    <li style="margin-bottom: 10px;"><strong>⚡ Speed:</strong> Fastest contestant to press the screen gets a 10s flash to answer.</li>
-                    <li style="margin-bottom: 10px;"><strong>🏆 Goal:</strong> Connecting the color from right-to-left or top-to-bottom.</li>
+                    <li style="margin-bottom: 10px;"><strong>💻 Display Screen:</strong> Open link from a computer to see the grid.</li>
+                    <li style="margin-bottom: 10px;"><strong>📱 Mobile:</strong> Each contestant opens the link from their phone.</li>
+                    <li style="margin-bottom: 10px;"><strong>❓ Questions:</strong> Get questions from ChatGPT or any other site.</li>
+                    <li style="margin-bottom: 10px;"><strong>⚡ Speed:</strong> Fastest to press screen gets 10 seconds to answer.</li>
+                    <li style="margin-bottom: 10px;"><strong>🏆 Goal:</strong> Connecting colors from side to side or top to bottom.</li>
                 </ul>
             </div>
         </div>
@@ -118,7 +117,7 @@
     </div>
 
     <div id="participant-view">
-        <div class="login-wrapper" id="login-area" style="background:#1e1e1e; padding:30px; border-radius:20px; text-align:center;">
+        <div id="login-area" style="text-align:center;">
             <h1>💡 انضم للمسابقة</h1>
             <input type="number" id="room-number" class="admin-btn" placeholder="رقم الغرفة" style="background: #2c2c2c; color: white;">
             <input type="text" id="username" class="admin-btn" placeholder="اسمك" style="background: #2c2c2c; color: white;">
@@ -127,7 +126,6 @@
         </div>
         <div id="game-area" style="display:none; text-align:center;">
             <h2 style="color:#00e676">تم الاتصال! ✅</h2>
-            <p>انتظر شاشة البوزر...</p>
         </div>
     </div>
 
@@ -238,6 +236,7 @@
         socket.on('buzzerAutoReset', () => {
             const b = document.getElementById('buzzer-overlay');
             if (window.innerWidth <= 768) {
+                b.style.display = 'flex';
                 b.innerText = 'اضغط!';
                 b.classList.remove('flash-active');
             }
