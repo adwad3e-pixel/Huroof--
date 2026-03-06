@@ -391,8 +391,8 @@ window.addEventListener('load', () => {
     document.getElementById('login-area').style.display = 'none';
     document.getElementById('game-area').style.display = 'block';
         }
-        socket.on('updateUserList', (users) => {
           socket.on('updateUserList', (users) => {
+              
     // القوائم في شاشة المسؤول (القديمة)
     const mListAdmin = document.getElementById('team-maroon');
     const oListAdmin = document.getElementById('team-orange');
@@ -474,6 +474,7 @@ window.addEventListener('load', () => {
     </script>
 </body>
 </html>
+
 
 
 
