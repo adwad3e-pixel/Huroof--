@@ -30,7 +30,16 @@
         body, html { margin: 0; font-family: 'Cairo', sans-serif; background-color: #000; color: #fff; min-height: 100vh; overflow-x: hidden; }
         
         #admin-view, #participant-view, #game-grid-view { display: none; padding: 20px; box-sizing: border-box; width: 100%; }
-
+<div id="active-players-list" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px;">
+    <div style="color: var(--maroon-team); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; min-width: 150px;">
+        <strong>🚩 الفريق الخمري:</strong>
+        <ul id="game-team-maroon" style="list-style: none; padding: 0; margin: 5px 0;"></ul>
+    </div>
+    <div style="color: var(--orange-team); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; min-width: 150px;">
+        <strong>🚩 الفريق البرتقالي:</strong>
+        <ul id="game-team-orange" style="list-style: none; padding: 0; margin: 5px 0;"></ul>
+    </div>
+</div>
         /* لوحة التحكم */
         #admin-view { max-width: 1200px; margin: 0 auto; color: #fff; }
         #admin-view h1 { text-align: center; color: #fff; font-weight: 700; margin-bottom: 30px; text-shadow: 0 0 10px #7c4dff; }
@@ -383,17 +392,37 @@ window.addEventListener('load', () => {
     document.getElementById('game-area').style.display = 'block';
         }
         socket.on('updateUserList', (users) => {
-            const mList = document.getElementById('team-maroon');
-            const oList = document.getElementById('team-orange');
-            mList.innerHTML = ''; oList.innerHTML = '';
-            for(let id in users) {
-                let li = document.createElement('li');
-                li.innerText = users[id].name;
-                if(users[id].team === 'الخمري') mList.appendChild(li);
-                else oList.appendChild(li);
-            }
-        });
+          socket.on('updateUserList', (users) => {
+    // القوائم في شاشة المسؤول (القديمة)
+    const mListAdmin = document.getElementById('team-maroon');
+    const oListAdmin = document.getElementById('team-orange');
+    
+    // القوائم في شاشة اللعبة (الجديدة)
+    const mListGame = document.getElementById('game-team-maroon');
+    const oListGame = document.getElementById('game-team-orange');
 
+    // تفريغ القوائم قبل التحديث
+    if(mListAdmin) mListAdmin.innerHTML = ''; 
+    if(oListAdmin) oListAdmin.innerHTML = '';
+    if(mListGame) mListGame.innerHTML = ''; 
+    if(oListGame) oListGame.innerHTML = '';
+
+    for (let id in users) {
+        let li = document.createElement('li');
+        li.innerText = users[id].name;
+        li.style.padding = "5px";
+        li.style.fontWeight = "bold";
+
+        // إضافة الاسم للفريق الصحيح في الشاشتين
+        if (users[id].team === 'الخمري' || users[id].team === 'Maroon') {
+            if(mListAdmin) mListAdmin.appendChild(li.cloneNode(true));
+            if(mListGame) mListGame.appendChild(li.cloneNode(true));
+        } else {
+            if(oListAdmin) oListAdmin.appendChild(li.cloneNode(true));
+            if(mListGame) oListGame.appendChild(li.cloneNode(true));
+        }
+    }
+});
         socket.on('gameReset', () => location.reload());
 
         socket.on('showBuzzerScreen', () => {
@@ -445,6 +474,7 @@ window.addEventListener('load', () => {
     </script>
 </body>
 </html>
+
 
 
 
