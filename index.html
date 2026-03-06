@@ -1,47 +1,329 @@
-<div id="room-join-view" style="display: none;">
-    <h2>Join Room</h2>
-    <input type="text" id="room-code" placeholder="Enter 4-digit Room Code" maxlength="4" pattern="[0-9]{4}" style="width: 100%; padding: 10px; font-size: 16px;">
-    <button onclick="joinRoom()">Join Room</button>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Huroof – Buzzer System</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .view { display: none; width: 100%; max-width: 480px; }
+        .view.active { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+
+        h1 { font-size: 2rem; color: #e94560; letter-spacing: 2px; }
+        h2 { font-size: 1.4rem; color: #e94560; }
+        h3 { font-size: 1.1rem; color: #aaa; }
+
+        .card {
+            background: #16213e;
+            border-radius: 12px;
+            padding: 28px 24px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 16px;
+            border-radius: 8px;
+            border: 2px solid #0f3460;
+            background: #0d1b2a;
+            color: #eee;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus { border-color: #e94560; }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+        }
+        button:hover { opacity: 0.9; }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        .btn-primary   { background: #e94560; color: #fff; }
+        .btn-secondary { background: #0f3460; color: #fff; }
+        .btn-success   { background: #27ae60; color: #fff; }
+        .btn-warning   { background: #e67e22; color: #fff; }
+        .btn-danger    { background: #c0392b; color: #fff; }
+
+        .divider {
+            display: flex; align-items: center; gap: 10px;
+            color: #555; font-size: 13px; width: 100%;
+        }
+        .divider::before, .divider::after {
+            content: ''; flex: 1; height: 1px; background: #333;
+        }
+
+        #room-code-display {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: 8px;
+            color: #e94560;
+            text-align: center;
+        }
+
+        #player-list {
+            list-style: none;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #player-list li {
+            background: #0f3460;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 14px;
+        }
+
+        #buzz-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: #e94560;
+            color: #fff;
+            border: 6px solid #fff2;
+            box-shadow: 0 0 40px #e9456066;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        #buzz-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 60px #e94560aa;
+        }
+        #buzz-button:active:not(:disabled) { transform: scale(0.95); }
+        #buzz-button:disabled {
+            background: #555;
+            box-shadow: none;
+            border-color: #333;
+        }
+
+        #buzz-result {
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+            min-height: 28px;
+            color: #f1c40f;
+        }
+
+        .status-badge {
+            font-size: 13px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: #0f3460;
+            color: #7eceff;
+        }
+
+        #error-msg {
+            color: #e74c3c;
+            font-size: 14px;
+            text-align: center;
+            min-height: 18px;
+        }
+
+        .input-room-code {
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── Landing View ─── -->
+<div id="view-landing" class="view active">
+    <h1>Huroof 🔔</h1>
+    <h3>Real-time Buzzer System</h3>
+    <div class="card">
+        <h2>Create Room</h2>
+        <input type="text" id="host-name" placeholder="Your name (host)" maxlength="30" />
+        <button class="btn-primary" onclick="createRoom()">Create Room</button>
+    </div>
+    <div class="divider">or</div>
+    <div class="card">
+        <h2>Join Room</h2>
+        <input type="text" id="join-name" placeholder="Your name" maxlength="30" />
+        <input type="text" id="join-code" placeholder="Room code (e.g. AB12CD)" maxlength="6"
+               class="input-room-code" />
+        <div id="error-msg"></div>
+        <button class="btn-secondary" onclick="joinRoom()">Join Room</button>
+    </div>
 </div>
 
-<style>
-    #room-join-view {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 20px;
-    }
-    #room-code {
-        display: block;
-        font-size: 16px;
-        padding: 10px;
-        width: 80%;
-    }
-    button {
-        margin-top: 10px;
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-</style>
+<!-- ─── Host View ─── -->
+<div id="view-host" class="view">
+    <h1>Huroof 🔔</h1>
+    <div class="card">
+        <h2>Room Code</h2>
+        <div id="room-code-display">------</div>
+        <h3>Share this code with players</h3>
+    </div>
+    <div class="card">
+        <h2>Players <span id="player-count" class="status-badge">0</span></h2>
+        <ul id="player-list"></ul>
+    </div>
+    <div id="buzz-result"></div>
+    <button id="btn-start" class="btn-success" onclick="startGame()" disabled>Start Round</button>
+    <button id="btn-reset" class="btn-warning" onclick="resetRoom()" style="display:none">Reset Round</button>
+</div>
 
+<!-- ─── Player View ─── -->
+<div id="view-player" class="view">
+    <h1>Huroof 🔔</h1>
+    <div class="card" style="align-items:center">
+        <h3 id="player-status">Waiting for host to start…</h3>
+        <button id="buzz-button" onclick="buzz()" disabled>BUZZ!</button>
+        <div id="buzz-result-player"></div>
+    </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
 <script>
-    function joinRoom() {
-        const roomCode = document.getElementById('room-code').value;
-        if (roomCode.match(/^[0-9]{4}$/)) {
-            // Assuming socket is already defined and connected
-            socket.emit('joinRoom', roomCode);
-        } else {
-            alert('Please enter a valid 4-digit room code.');
-        }
+    const socket = io();
+
+    let currentRoom = null;
+    let isHost = false;
+
+    // ── Helpers ──────────────────────────────────────────────────────────
+
+    function showView(id) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 
-    // Initialization code to show room-join-view on mobile devices
-    if (window.matchMedia("(max-width: 768px)").matches) {
-        document.getElementById('room-join-view').style.display = 'flex';
-    } else {
-        // Proceed with the participant view if not mobile
-        document.getElementById('participant-view').style.display = 'flex';
+    function setError(msg) {
+        document.getElementById('error-msg').textContent = msg;
     }
+
+    function updatePlayerList(players) {
+        const list = document.getElementById('player-list');
+        const count = document.getElementById('player-count');
+        list.innerHTML = players.map(p => `<li>👤 ${p.name}</li>`).join('');
+        count.textContent = players.length;
+        document.getElementById('btn-start').disabled = players.length === 0;
+    }
+
+    // ── Actions ───────────────────────────────────────────────────────────
+
+    function createRoom() {
+        const hostName = document.getElementById('host-name').value.trim() || 'Host';
+        socket.emit('createRoom', hostName);
+    }
+
+    function joinRoom() {
+        const playerName = document.getElementById('join-name').value.trim();
+        const roomCode = document.getElementById('join-code').value.trim().toUpperCase();
+        if (!playerName) { setError('Please enter your name.'); return; }
+        if (!/^[A-Z0-9]{6}$/.test(roomCode)) { setError('Room code must be 6 alphanumeric characters.'); return; }
+        setError('');
+        socket.emit('joinRoom', { roomCode, playerName });
+    }
+
+    function startGame() {
+        socket.emit('startGame', currentRoom);
+    }
+
+    function buzz() {
+        socket.emit('buzz', currentRoom);
+    }
+
+    function resetRoom() {
+        socket.emit('resetRoom', currentRoom);
+    }
+
+    // ── Socket Events ─────────────────────────────────────────────────────
+
+    socket.on('roomCreated', (roomCode) => {
+        currentRoom = roomCode;
+        isHost = true;
+        document.getElementById('room-code-display').textContent = roomCode;
+        showView('view-host');
+    });
+
+    socket.on('joinedRoom', ({ roomCode, playerName }) => {
+        currentRoom = roomCode;
+        isHost = false;
+        showView('view-player');
+    });
+
+    socket.on('joinError', (msg) => {
+        setError(msg);
+    });
+
+    socket.on('playerJoined', ({ players }) => {
+        if (isHost) updatePlayerList(players);
+    });
+
+    socket.on('playerLeft', ({ players }) => {
+        if (isHost) updatePlayerList(players);
+    });
+
+    socket.on('gameStarted', () => {
+        if (isHost) {
+            document.getElementById('buzz-result').textContent = 'Round started – waiting for buzz…';
+            document.getElementById('btn-start').style.display = 'none';
+            document.getElementById('btn-reset').style.display = 'block';
+        } else {
+            document.getElementById('player-status').textContent = 'Round started – hit BUZZ!';
+            document.getElementById('buzz-button').disabled = false;
+            document.getElementById('buzz-result-player').textContent = '';
+        }
+    });
+
+    socket.on('buzzed', ({ playerId, playerName }) => {
+        if (isHost) {
+            document.getElementById('buzz-result').textContent = `🔔 ${playerName} buzzed first!`;
+        } else {
+            const isMe = playerId === socket.id;
+            document.getElementById('buzz-button').disabled = true;
+            document.getElementById('buzz-result-player').textContent =
+                isMe ? '🎉 You buzzed first!' : `⛔ ${playerName} buzzed first.`;
+            document.getElementById('player-status').textContent = 'Waiting for next round…';
+        }
+    });
+
+    socket.on('roomReset', () => {
+        if (isHost) {
+            document.getElementById('buzz-result').textContent = '';
+            document.getElementById('btn-start').style.display = 'block';
+            document.getElementById('btn-reset').style.display = 'none';
+        } else {
+            document.getElementById('buzz-button').disabled = true;
+            document.getElementById('buzz-result-player').textContent = '';
+            document.getElementById('player-status').textContent = 'Waiting for host to start…';
+        }
+    });
+
+    socket.on('hostDisconnected', () => {
+        alert('The host has disconnected. The room is now closed.');
+        location.reload();
+    });
 </script>
+</body>
+</html>
