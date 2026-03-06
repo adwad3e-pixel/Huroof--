@@ -1,70 +1,44 @@
-const express = require('express');
-const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
-const path = require('path');
+// Function to generate a unique room code
+function generateRoomCode() {
+    return Math.random().toString(36).substr(2, 6);
+}
 
-app.use(express.static(__dirname));
-
-// تخزين بيانات المستخدمين وحالة البوزر
-let users = {}; 
-let buzzerLocked = false;
-
-io.on('connection', (socket) => {
-    console.log('متصل جديد: ' + socket.id);
-
-    // 1. تسجيل بيانات المتسابق
-    socket.on('registerUser', (data) => {
-        users[socket.id] = {
-            name: data.name,
-            team: data.team
-        };
-        console.log(`تسجيل لاعب: ${data.name}`);
-        io.emit('updateUserList', users);
-    });
-
-    // 2. بدء اللعبة (إظهار البوزر للمتسابقين)
-    socket.on('startGridGame', () => {
-        io.emit('showBuzzerScreen');
-    });
-
-    // 3. منطق ضغط البوزر (الأسرع فقط)
-    socket.on('pressBuzzer', () => {
-        if (!buzzerLocked) {
-            buzzerLocked = true; 
-            const winner = users[socket.id];
-            const winnerName = winner ? winner.name : "مجهول";
-
-            io.emit('buzzerWinner', { 
-                id: socket.id, 
-                name: winnerName 
-            });
-
-            // إعادة ضبط البوزر تلقائياً بعد 10 ثوانٍ
-            setTimeout(() => {
-                buzzerLocked = false;
-                io.emit('buzzerAutoReset');
-            }, 10000);
-        }
-    });
-
-    // 4. إعادة ضبط النظام كاملاً
-    socket.on('resetGame', () => {
-        users = {};
-        buzzerLocked = false;
-        io.emit('gameReset');
-    });
-
-    // 5. عند قطع الاتصال
-    socket.on('disconnect', () => {
-        delete users[socket.id];
-        io.emit('updateUserList', users);
-        console.log('انقطع الاتصال: ' + socket.id);
-    });
+// Socket event to create a new room
+socket.on('createRoom', (roomData) => {
+    const roomCode = generateRoomCode();
+    // Logic to save room data and notify users
+    socket.join(roomCode);
+    socket.emit('roomCreated', roomCode);
 });
 
-// تشغيل السيرفر
-const PORT = process.env.PORT || 3000;
-http.listen(PORT, () => {
-    console.log(`✅ السيرفر يعمل بنجاح على المنفذ: ${PORT}`);
+// Socket event to join an existing room
+socket.on('joinRoom', (roomCode) => {
+    // Logic to verify room code and add user to the room
+    socket.join(roomCode);
+    socket.emit('joinedRoom', roomCode);
+});
+
+// Logic for room-based user registration
+socket.on('registerUser', (userData, roomCode) => {
+    // Logic to register user within the specified room
+});
+
+// Socket event to start the game in the room
+socket.on('startGame', (roomCode) => {
+    // Logic to start the game in the specified room
+});
+
+// Buzzer logic for room participants
+socket.on('buzz', (roomCode) => {
+    // Logic to manage buzz action in the room
+});
+
+// Logic to reset the room
+socket.on('resetRoom', (roomCode) => {
+    // Logic to reset the room state
+});
+
+// Cleanup when a user disconnects
+socket.on('disconnect', () => {
+    // Logic to clean up user from the room and manage states
 });
