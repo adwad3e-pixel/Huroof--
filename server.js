@@ -17,7 +17,7 @@ app.use(express.static(path.join(__dirname)));
 function generateRoomCode() {
     let code;
     do {
-        code = Math.random().toString(36).substr(2, 6).toUpperCase();
+        code = Math.random().toString(36).slice(2, 8).toUpperCase();
     } while (rooms.has(code));
     return code;
 }

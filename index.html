@@ -152,6 +152,10 @@
             text-transform: uppercase;
             letter-spacing: 4px;
         }
+
+        .hidden { display: none; }
+
+        .card-center { align-items: center; }
     </style>
 </head>
 <body>
@@ -190,13 +194,13 @@
     </div>
     <div id="buzz-result"></div>
     <button id="btn-start" class="btn-success" onclick="startGame()" disabled>Start Round</button>
-    <button id="btn-reset" class="btn-warning" onclick="resetRoom()" style="display:none">Reset Round</button>
+    <button id="btn-reset" class="btn-warning hidden" onclick="resetRoom()">Reset Round</button>
 </div>
 
 <!-- ─── Player View ─── -->
 <div id="view-player" class="view">
     <h1>Huroof 🔔</h1>
-    <div class="card" style="align-items:center">
+    <div class="card card-center">
         <h3 id="player-status">Waiting for host to start…</h3>
         <button id="buzz-button" onclick="buzz()" disabled>BUZZ!</button>
         <div id="buzz-result-player"></div>
@@ -266,7 +270,7 @@
         showView('view-host');
     });
 
-    socket.on('joinedRoom', ({ roomCode, playerName }) => {
+    socket.on('joinedRoom', ({ roomCode }) => {
         currentRoom = roomCode;
         isHost = false;
         showView('view-player');
@@ -287,8 +291,8 @@
     socket.on('gameStarted', () => {
         if (isHost) {
             document.getElementById('buzz-result').textContent = 'Round started – waiting for buzz…';
-            document.getElementById('btn-start').style.display = 'none';
-            document.getElementById('btn-reset').style.display = 'block';
+            document.getElementById('btn-start').classList.add('hidden');
+            document.getElementById('btn-reset').classList.remove('hidden');
         } else {
             document.getElementById('player-status').textContent = 'Round started – hit BUZZ!';
             document.getElementById('buzz-button').disabled = false;
@@ -311,8 +315,8 @@
     socket.on('roomReset', () => {
         if (isHost) {
             document.getElementById('buzz-result').textContent = '';
-            document.getElementById('btn-start').style.display = 'block';
-            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('btn-start').classList.remove('hidden');
+            document.getElementById('btn-reset').classList.add('hidden');
         } else {
             document.getElementById('buzz-button').disabled = true;
             document.getElementById('buzz-result-player').textContent = '';
