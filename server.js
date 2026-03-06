@@ -1,60 +1,70 @@
 const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
+const app = express();
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
 const path = require('path');
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+app.use(express.static(__dirname));
 
-// --- إعداد المسارات بدقة ---
-// يخبر السيرفر بالبحث عن الملفات في المجلد الرئيسي وفي مجلد public
-app.use(express.static(path.join(__dirname)));
-app.use(express.static(path.join(__dirname, 'public')));
-
-// الوظيفة الأساسية: عند طلب الرابط الرئيسي، ابحث عن index.html
-app.get('/', (req, res) => {
-    const indexPath = path.join(__dirname, 'index.html');
-    const publicIndexPath = path.join(__dirname, 'public', 'index.html');
-
-    // جرب المسار الأول، إذا فشل جرب الثاني
-    res.sendFile(indexPath, (err) => {
-        if (err) {
-            res.sendFile(publicIndexPath, (err2) => {
-                if (err2) {
-                    res.status(404).send("Error: index.html not found in root or public folder!");
-                }
-            });
-        }
-    });
-});
-
-// --- نظام الغرف ---
-let roomUsers = {}; 
+// تخزين بيانات المستخدمين وحالة البوزر
+let users = {}; 
+let buzzerLocked = false;
 
 io.on('connection', (socket) => {
-    socket.on('joinRoom', (room) => {
-        socket.join(room);
-        socket.currentRoom = room;
-    });
+    console.log('متصل جديد: ' + socket.id);
 
+    // 1. تسجيل بيانات المتسابق
     socket.on('registerUser', (data) => {
-        const { name, team, room } = data;
-        socket.join(room);
-        socket.currentRoom = room;
-        if (!roomUsers[room]) roomUsers[room] = {};
-        roomUsers[room][socket.id] = { name, team };
-        io.to(room).emit('updateUserList', roomUsers[room]);
+        users[socket.id] = {
+            name: data.name,
+            team: data.team
+        };
+        console.log(`تسجيل لاعب: ${data.name}`);
+        io.emit('updateUserList', users);
     });
 
-    socket.on('disconnect', () => {
-        let room = socket.currentRoom;
-        if (room && roomUsers[room] && roomUsers[room][socket.id]) {
-            delete roomUsers[room][socket.id];
-            io.to(room).emit('updateUserList', roomUsers[room]);
+    // 2. بدء اللعبة (إظهار البوزر للمتسابقين)
+    socket.on('startGridGame', () => {
+        io.emit('showBuzzerScreen');
+    });
+
+    // 3. منطق ضغط البوزر (الأسرع فقط)
+    socket.on('pressBuzzer', () => {
+        if (!buzzerLocked) {
+            buzzerLocked = true; 
+            const winner = users[socket.id];
+            const winnerName = winner ? winner.name : "مجهول";
+
+            io.emit('buzzerWinner', { 
+                id: socket.id, 
+                name: winnerName 
+            });
+
+            // إعادة ضبط البوزر تلقائياً بعد 10 ثوانٍ
+            setTimeout(() => {
+                buzzerLocked = false;
+                io.emit('buzzerAutoReset');
+            }, 10000);
         }
+    });
+
+    // 4. إعادة ضبط النظام كاملاً
+    socket.on('resetGame', () => {
+        users = {};
+        buzzerLocked = false;
+        io.emit('gameReset');
+    });
+
+    // 5. عند قطع الاتصال
+    socket.on('disconnect', () => {
+        delete users[socket.id];
+        io.emit('updateUserList', users);
+        console.log('انقطع الاتصال: ' + socket.id);
     });
 });
 
+// تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+http.listen(PORT, () => {
+    console.log(`✅ السيرفر يعمل بنجاح على المنفذ: ${PORT}`);
+});
