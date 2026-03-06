@@ -365,6 +365,20 @@
                 document.getElementById('team-name-1').innerHTML = '<span data-ar="الفريق الخمري" data-en="Maroon Team">Maroon Team</span>';
                 document.getElementById('team-name-2').innerHTML = '<span data-ar="الفريق البرتقالي" data-en="Orange Team">Orange Team</span>';
             }
+
+            // تحديث أحرف الشبكة عند تغيير اللغة
+            const hexes = document.querySelectorAll('.hex');
+            if (hexes.length > 0) {
+                const previousLanguageLetters = currentLanguage === 'en' ? arabicLetters : originalLetters;
+                const currentLanguageLetters = currentLanguage === 'en' ? originalLetters : arabicLetters;
+                hexes.forEach(hex => {
+                    const idx = previousLanguageLetters.indexOf(hex.innerText.trim());
+                    if (idx !== -1) {
+                        hex.innerText = currentLanguageLetters[idx];
+                    }
+                });
+                saveGame();
+            }
         }
 
         function showView(viewId) {
