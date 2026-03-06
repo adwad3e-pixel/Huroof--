@@ -225,13 +225,20 @@
         else showView('participant-view');
 
         function startTheGame() {
-            showView('game-grid-view');
-            if(!loadGame()) createGrid();
-            socket.emit('startGridGame');
+    const room = document.getElementById('admin-room-id').value;
+    if (!room) return alert("الرجاء تحديد كود الغرفة أولاً!");
+    
+    socket.emit('joinRoom', room); // ربط المسؤول بالغرفة
+    
+    showView('game-grid-view');
+    if (!loadGame()) createGrid();
+    socket.emit('startGridGame');
         }
-        
-        function resetGameServer() { socket.emit('resetGame'); }
-
+        function resetGameServer() { 
+    const room = document.getElementById('admin-room-id').value;
+    if (!room) return alert("يجب إدخال كود الغرفة للإعادة!");
+    socket.emit('resetGame'); 
+}
         function incrementScore(t) {
             if(t===1) { scoreTeam1++; document.getElementById('score-1').innerText = scoreTeam1; }
             else { scoreTeam2++; document.getElementById('score-2').innerText = scoreTeam2; }
@@ -343,13 +350,17 @@
         }
 
         function login(team) {
-            let name = document.getElementById('username').value;
-            if(!name) return alert("الرجاء إدخال اسمك!");
-            socket.emit('registerUser', {name, team});
-            document.getElementById('login-area').style.display = 'none';
-            document.getElementById('game-area').style.display = 'block';
-        }
+    let name = document.getElementById('username').value;
+    let room = document.getElementById('room-id').value; 
 
+    if (!room) return alert("الرجاء إدخال كود الغرفة!");
+    if (!name) return alert("الرجاء إدخال اسمك!");
+
+    socket.emit('registerUser', { name, team, room });
+
+    document.getElementById('login-area').style.display = 'none';
+    document.getElementById('game-area').style.display = 'block';
+        }
         socket.on('updateUserList', (users) => {
             const mList = document.getElementById('team-maroon');
             const oList = document.getElementById('team-orange');
@@ -413,5 +424,6 @@
     </script>
 </body>
 </html>
+
 
 
