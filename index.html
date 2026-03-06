@@ -1,47 +1,134 @@
-<div id="room-join-view" style="display: none;">
-    <h2>Join Room</h2>
-    <input type="text" id="room-code" placeholder="Enter 4-digit Room Code" maxlength="4" pattern="[0-9]{4}" style="width: 100%; padding: 10px; font-size: 16px;">
-    <button onclick="joinRoom()">Join Room</button>
-</div>
-
-<style>
-    #room-join-view {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin-top: 20px;
-    }
-    #room-code {
-        display: block;
-        font-size: 16px;
-        padding: 10px;
-        width: 80%;
-    }
-    button {
-        margin-top: 10px;
-        padding: 10px 20px;
-        font-size: 16px;
-        cursor: pointer;
-    }
-</style>
-
-<script>
-    function joinRoom() {
-        const roomCode = document.getElementById('room-code').value;
-        if (roomCode.match(/^[0-9]{4}$/)) {
-            // Assuming socket is already defined and connected
-            socket.emit('joinRoom', roomCode);
-        } else {
-            alert('Please enter a valid 4-digit room code.');
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Huroof Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
         }
-    }
+        #room-join-view,
+        #participant-view {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-top: 20px;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+        }
+        #room-code {
+            display: block;
+            font-size: 16px;
+            padding: 10px;
+            width: 80%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #status,
+        #buzz-status {
+            margin-top: 10px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div id="room-join-view">
+        <h2>Join Room</h2>
+        <input type="text" id="room-code" placeholder="Enter 4-digit Room Code" maxlength="4" pattern="[0-9]{4}">
+        <button onclick="joinRoom()">Join Room</button>
+        <p id="status"></p>
+    </div>
 
-    // Initialization code to show room-join-view on mobile devices
-    if (window.matchMedia("(max-width: 768px)").matches) {
-        document.getElementById('room-join-view').style.display = 'flex';
-    } else {
-        // Proceed with the participant view if not mobile
-        document.getElementById('participant-view').style.display = 'flex';
-    }
-</script>
+    <div id="participant-view">
+        <h2>Welcome to Huroof!</h2>
+        <p>You are connected as a participant.</p>
+        <button onclick="buzz()">BUZZ!</button>
+        <p id="buzz-status"></p>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function joinRoom() {
+            const roomCode = document.getElementById('room-code').value;
+            if (roomCode.match(/^[0-9]{4}$/)) {
+                socket.emit('joinRoom', roomCode);
+            } else {
+                alert('Please enter a valid 4-digit room code.');
+            }
+        }
+
+        function buzz() {
+            if (socket.roomCode) {
+                socket.emit('buzz', socket.roomCode);
+            } else {
+                alert('You must join a room before buzzing.');
+            }
+        }
+
+        socket.on('joinedRoom', (roomCode) => {
+            socket.roomCode = roomCode;
+            document.getElementById('room-join-view').style.display = 'none';
+            document.getElementById('participant-view').style.display = 'flex';
+        });
+
+        socket.on('error', (message) => {
+            document.getElementById('status').textContent = message;
+        });
+
+        socket.on('gameStarted', () => {
+            document.getElementById('buzz-status').textContent = 'Game started! Press BUZZ!';
+        });
+
+        socket.on('buzzed', (data) => {
+            const name = data.user ? data.user.name : data.id;
+            document.getElementById('buzz-status').textContent = 'Buzzed by: ' + name;
+        });
+
+        socket.on('roomReset', () => {
+            document.getElementById('buzz-status').textContent = 'Room reset. Waiting for next round...';
+        });
+
+        socket.on('hostDisconnected', () => {
+            alert('The host has disconnected. The room has been closed.');
+            document.getElementById('participant-view').style.display = 'none';
+            document.getElementById('room-join-view').style.display = 'flex';
+        });
+
+        // Show room-join-view on mobile, participant-view on desktop
+        if (window.matchMedia('(max-width: 768px)').matches) {
+            document.getElementById('room-join-view').style.display = 'flex';
+        } else {
+            document.getElementById('participant-view').style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
