@@ -377,8 +377,8 @@ window.addEventListener('load', () => {
     if (!room) return alert("الرجاء إدخال كود الغرفة!");
     if (!name) return alert("الرجاء إدخال اسمك!");
 
-    socket.emit('registerUser', { name, team, room });
-
+    socket.emit('registerUser', { name: name, team: team, room: room });
+            
     document.getElementById('login-area').style.display = 'none';
     document.getElementById('game-area').style.display = 'block';
         }
@@ -445,6 +445,7 @@ window.addEventListener('load', () => {
     </script>
 </body>
 </html>
+
 
 
 
