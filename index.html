@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=El+Messiri:wght@700&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    
     <style>
         :root {
             --grid-bg: linear-gradient(135deg, #1a1a1a 0%, #37474f 100%);
@@ -54,11 +53,14 @@
             color: #00e676; 
             transition: all 0.3s;
         }
+        .team-list li:hover { border-color: #fff; box-shadow: 0 0 10px rgba(255,255,255,0.3); }
+
         .admin-btn { 
             width: 100%; padding: 18px; font-size: 18px; border-radius: 0; 
             border: none; cursor: pointer; font-weight: bold; margin-bottom: 15px; 
             transition: all 0.3s; font-family: 'Cairo'; text-transform: uppercase;
         }
+        .admin-btn:hover { transform: scale(1.02); }
         .btn-start { background-color: #00e676; color: #000; box-shadow: 0 0 15px rgba(0,230,118,0.5); }
         .btn-reset { background-color: #ff1744; color: white; box-shadow: 0 0 15px rgba(255,23,68,0.5); }
 
@@ -71,17 +73,44 @@
             border: 1px solid rgba(255, 255, 255, 0.1); 
             font-size: 36px; font-weight: bold; justify-content: center; align-items: center;
         }
+        .team-container-box { display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; position: relative; }
+        .team-name-text { font-size: 32px; margin: 0; }
+        .team-score { font-family: 'El Messiri', sans-serif; font-size: 64px; line-height: 1; }
         .honeycomb { display: grid; grid-template-columns: repeat(5, var(--hex-width)); grid-auto-rows: calc(var(--hex-height) * 0.75 + var(--hex-gap)); gap: var(--hex-gap); justify-content: center; margin-bottom: 50px; }
         .hex-container { width: var(--hex-width); height: var(--hex-height); position: relative; cursor: pointer; }
         .hex-container:nth-child(10n+6), .hex-container:nth-child(10n+7), .hex-container:nth-child(10n+8), .hex-container:nth-child(10n+9), .hex-container:nth-child(10n+10) { transform: translateX(calc(var(--hex-width) / 2 + var(--hex-gap) / 2)); }
         .hex { width: 100%; height: 100%; clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); display: flex; justify-content: center; align-items: center; font-size: 55px; font-weight: bold; transition: all 0.3s ease; }
+        @keyframes winPulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.5); } 100% { transform: scale(1); filter: brightness(1); } }
+        .win-highlight { animation: winPulse 0.7s infinite ease-in-out !important; z-index: 10; }
         .state-0 { background: linear-gradient(135deg, var(--color-4-start), var(--color-4-end)); color: white; }
         .state-1 { background: linear-gradient(135deg, var(--color-1-start), var(--color-1-end)); color: #333; }
         .state-2 { background: linear-gradient(135deg, var(--color-2-start), var(--color-2-end)); color: white; }
         .state-3 { background: linear-gradient(135deg, var(--color-3-start), var(--color-3-end)); color: white; }
-        .win-highlight { animation: winPulse 0.7s infinite ease-in-out !important; z-index: 10; }
-        @keyframes winPulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .controls { display: flex; justify-content: space-between; width: 95%; max-width: 1200px; margin-top: auto; padding-bottom: 20px; }
+        .control-group { display: flex; gap: 15px; }
+        .pg2-btn { padding: 12px 25px; border-radius: 50px; border: none; cursor: pointer; font-weight: bold; font-family: 'Cairo'; }
+        .btn-win { background: #4caf50; color: white; }
+        .btn-rename { background: #03a9f4; color: white; }
+        .btn-reset-score { background: #e91e63; color: white; }
 
+        /* شاشة المتسابق */
+        #participant-view { padding: 0; min-height: 100vh; display: flex; justify-content: center; align-items: center; }
+        .login-wrapper {
+            width: 90%; max-width: 400px; background: #1e1e1e; padding: 30px;
+            border-radius: 20px; border: 1px solid #333; box-shadow: 0 15px 35px rgba(0,0,0,0.6); text-align: center;
+        }
+        .login-title { font-family: 'El Messiri', sans-serif; font-size: 28px; margin-bottom: 25px; color: white; letter-spacing: 1px; }
+        .input-name {
+            width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444;
+            margin-bottom: 25px; font-size: 16px; background: #2c2c2c; color: white;
+            text-align: center; box-sizing: border-box; transition: all 0.3s;
+        }
+        .input-name:focus { outline: none; border-color: #7c4dff; }
+        .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; font-size: 17px; cursor: pointer; transition: all 0.2s ease; position: relative; overflow: hidden; }
+        .choice-btn:active { transform: scale(0.98); }
+        .btn-maroon { background: linear-gradient(135deg, #b71c1c, #880e4f); color: white; border-bottom: 4px solid #560000; }
+        .btn-orange { background: linear-gradient(135deg, #ff9800, #e65100); color: white; border-bottom: 4px solid #a53200; }
+        
         /* البوزر */
         #buzzer-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
@@ -90,15 +119,7 @@
             cursor: pointer; user-select: none; flex-direction: column;
         }
         .flash-red-active { animation: strobe 0.15s infinite; }
-        @keyframes strobe { 0% { background-color: red; } 50% { background-color: white; } 100% { background-color: red; } }
-
-        /* شاشة المتسابق */
-        #participant-view { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
-        .login-wrapper { background: #1e1e1e; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; }
-        .input-name { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #444; margin-bottom: 20px; background: #2c2c2c; color: white; text-align: center; box-sizing: border-box; }
-        .choice-btn { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; }
-        .btn-maroon { background: var(--maroon-team); color: white; }
-        .btn-orange { background: var(--orange-team); color: white; }
+        @keyframes strobe { 0% { background-color: red; color: white; } 50% { background-color: white; color: red; } 100% { background-color: red; color: white; } }
     </style>
 </head>
 <body>
@@ -108,11 +129,6 @@
 
     <div id="admin-view">
         <h1>🎮 لوحة التحكم</h1>
-        <div style="background: #222; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444; text-align: center;">
-            <label style="display: block; margin-bottom: 10px; color: #aaa;">🔢 كود الغرفة العشوائي:</label>
-            <input type="text" id="admin-room-id" class="input-name" readonly style="margin-bottom:0; font-size: 32px; color: #00e676; border-color: #00e676; width: 200px;">
-            <p style="font-size: 14px; color: #666; margin-top: 10px;">أعطِ هذا الرقم للمتسابقين للدخول</p>
-        </div>
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
         <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
         
@@ -123,157 +139,248 @@
     </div>
 
     <div id="game-grid-view">
-        <div id="active-players-list" style="display: flex; gap: 20px; justify-content: center; margin-bottom: 20px; width: 100%;">
-            <div style="color: var(--maroon-team); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; min-width: 150px; text-align: center;">
-                <strong>🚩 الفريق الخمري:</strong>
-                <ul id="game-team-maroon" style="list-style: none; padding: 0; margin: 5px 0;"></ul>
-            </div>
-            <div style="color: var(--orange-team); background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px; min-width: 150px; text-align: center;">
-                <strong>🚩 الفريق البرتقالي:</strong>
-                <ul id="game-team-orange" style="list-style: none; padding: 0; margin: 5px 0;"></ul>
-            </div>
-        </div>
-
         <div class="scoreboard">
-            <div onclick="incrementScore(1)" style="cursor:pointer; text-align: center; color: var(--maroon-team);">
-                <span id="team-name-1" style="font-size: 24px;">الفريق الخمري</span><br>
-                <span id="score-1" style="font-size: 48px;">0</span>
+            <div onclick="incrementScore(1)" class="team-container-box" style="color: var(--maroon-team);">
+                <span id="team-name-1" class="team-name-text">الفريق الخمري</span>
+                <span id="score-1" class="team-score">0</span>
             </div>
-            <div onclick="incrementScore(2)" style="cursor:pointer; text-align: center; color: var(--orange-team);">
-                <span id="team-name-2" style="font-size: 24px;">الفريق البرتقالي</span><br>
-                <span id="score-2" style="font-size: 48px;">0</span>
+            <div onclick="incrementScore(2)" class="team-container-box" style="color: var(--orange-team);">
+                <span id="team-name-2" class="team-name-text">الفريق البرتقالي</span>
+                <span id="score-2" class="team-score">0</span>
             </div>
         </div>
-        
         <div class="honeycomb" id="grid"></div>
-        
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-            <button class="admin-btn btn-reset" style="width: auto;" onclick="resetScoresOnly()">تصفير النقاط</button>
-            <button class="admin-btn btn-start" style="width: auto;" onclick="celebrate()">احتفال ✨</button>
-            <button class="admin-btn" style="width: auto; background: #555;" onclick="location.reload()">خروج</button>
+        <div class="controls">
+            <div class="control-group">
+                <button class="pg2-btn btn-reset-score" onclick="resetScoresOnly()">تصفير النتائج 🔢</button>
+                <button class="pg2-btn" style="background:#555; color:white" onclick="createGrid(); saveGame();">إعادة ضبط اللوحة 🔄</button>
+            </div>
+            <div class="control-group">
+                <button class="pg2-btn btn-rename" onclick="promptTeamNames()">تغيير الأسماء ✏️</button>
+                <button class="pg2-btn btn-win" onclick="celebrate()">مبروك ✨</button>
+                <button class="pg2-btn" style="background:#333; color:white" onclick="location.reload()">🔙 عودة</button>
+            </div>
         </div>
     </div>
 
     <div id="participant-view">
         <div class="login-wrapper" id="login-area">
-            <h1 style="color:white; margin-bottom: 20px;">💡 انضم للمسابقة</h1>
-            <input type="number" id="room-id" class="input-name" placeholder="أدخل كود الغرفة...">
-            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك...">
-            <button class="choice-btn btn-maroon" onclick="login('الخمري')">الفريق الخمري</button>
-            <button class="choice-btn btn-orange" onclick="login('البرتقالي')">الفريق البرتقالي</button>
+            <h1 class="login-title">💡 تسجيل الدخول</h1>
+            <input type="text" id="username" class="input-name" placeholder="أدخل اسمك الكريم...">
+            <button class="choice-btn btn-maroon" onclick="login('الخمري')">✨ الفريق الخمري</button>
+            <button class="choice-btn btn-orange" onclick="login('البرتقالي')">✨ الفريق البرتقالي</button>
         </div>
         <div id="game-area" style="display:none;" class="login-wrapper">
-            <h1 style="color:white;">✅ تم الدخول!</h1>
-            <p>انتظر بدء المسؤول للعبة...</p>
+            <h1 style="color:white; font-family:'El Messiri'; font-size: 24px;">🎉 تم التسجيل بنجاح!</h1>
+            <p class="wait-text">انتظر بدء الجولة من لوحة التحكم...</p>
         </div>
     </div>
 
     <script>
         const socket = io();
+        const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
+        let scoreTeam1 = 0, scoreTeam2 = 0;
+        const buzzerOverlay = document.getElementById('buzzer-overlay');
+        const buzzerSound = document.getElementById('buzzer-sound');
+        let soundInterval, countdownInterval;
 
-        // 1. توليد الكود
-        function generateRandomCode() {
-            const code = Math.floor(1000 + Math.random() * 9000);
-            if(document.getElementById('admin-room-id')) {
-                document.getElementById('admin-room-id').value = code;
-            }
-        }
-
-        // 2. التحكم في الشاشات
         function showView(viewId) {
             document.getElementById('admin-view').style.display = 'none';
             document.getElementById('game-grid-view').style.display = 'none';
             document.getElementById('participant-view').style.display = 'none';
+            buzzerOverlay.style.display = 'none'; 
             const target = document.getElementById(viewId);
             if(viewId === 'game-grid-view') target.style.display = 'flex';
             else target.style.display = 'block';
         }
 
-        window.onload = () => {
-            if (window.innerWidth > 768) {
-                showView('admin-view');
-                generateRandomCode();
-            } else {
-                showView('participant-view');
-            }
-        };
-
-        // 3. منطق اللعبة
-        const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
-        let score1 = 0, score2 = 0;
+        if (window.innerWidth > 768) showView('admin-view');
+        else showView('participant-view');
 
         function startTheGame() {
-            const room = document.getElementById('admin-room-id').value;
-            socket.emit('joinRoom', room);
             showView('game-grid-view');
-            createGrid();
+            if(!loadGame()) createGrid();
+            socket.emit('startGridGame');
+        }
+        
+        function resetGameServer() { socket.emit('resetGame'); }
+
+        function incrementScore(t) {
+            if(t===1) { scoreTeam1++; document.getElementById('score-1').innerText = scoreTeam1; }
+            else { scoreTeam2++; document.getElementById('score-2').innerText = scoreTeam2; }
+            saveGame();
         }
 
-        function createGrid() {
+        function createGrid(savedStates = null, savedLetters = null) {
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
-            let letters = [...originalLetters].sort(() => Math.random() - 0.5);
-            letters.forEach(char => {
+            let letters = savedLetters || [...originalLetters].sort(() => Math.random() - 0.5);
+            letters.forEach((char, index) => {
                 const container = document.createElement('div');
                 container.className = 'hex-container';
                 const hex = document.createElement('div');
-                hex.className = 'hex state-0';
+                let state = (savedStates && savedStates[index]) ? savedStates[index] : 0;
+                hex.className = `hex state-${state}`;
                 hex.innerText = char;
-                hex.dataset.state = 0;
+                hex.dataset.state = state;
                 container.onclick = () => {
                     let s = (parseInt(hex.dataset.state) + 1) % 4;
                     hex.dataset.state = s;
                     hex.className = `hex state-${s}`;
+                    saveGame();
+                    checkWinCondition();
                 };
                 container.appendChild(hex);
                 grid.appendChild(container);
             });
         }
 
-        function incrementScore(t) {
-            if(t===1) { score1++; document.getElementById('score-1').innerText = score1; }
-            else { score2++; document.getElementById('score-2').innerText = score2; }
+        function saveGame() {
+            const states = Array.from(document.querySelectorAll('.hex')).map(h => h.dataset.state);
+            const letters = Array.from(document.querySelectorAll('.hex')).map(h => h.innerText);
+            localStorage.setItem('gameData', JSON.stringify({scoreTeam1, scoreTeam2, states, letters}));
+        }
+
+        function loadGame() {
+            const data = JSON.parse(localStorage.getItem('gameData'));
+            if(!data) return false;
+            scoreTeam1 = data.scoreTeam1; scoreTeam2 = data.scoreTeam2;
+            document.getElementById('score-1').innerText = scoreTeam1;
+            document.getElementById('score-2').innerText = scoreTeam2;
+            createGrid(data.states, data.letters);
+            return true;
         }
 
         function resetScoresOnly() {
-            score1 = 0; score2 = 0;
+            scoreTeam1 = 0; scoreTeam2 = 0;
             document.getElementById('score-1').innerText = 0;
             document.getElementById('score-2').innerText = 0;
+            document.querySelectorAll('.hex').forEach(h => h.classList.remove('win-highlight'));
+            saveGame();
+        }
+
+        function promptTeamNames() {
+            let n1 = prompt("اسم الفريق 1:", "الفريق الخمري");
+            let n2 = prompt("اسم الفريق 2:", "الفريق البرتقالي");
+            if(n1) document.getElementById('team-name-1').innerText = n1;
+            if(n2) document.getElementById('team-name-2').innerText = n2;
         }
 
         function celebrate() { confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } }); }
 
-        // 4. منطق المتسابق والأسماء
+        function checkWinCondition() {
+            document.querySelectorAll('.hex').forEach(h => h.classList.remove('win-highlight'));
+            const winPath1 = checkPath(2);
+            if (winPath1) { highlightWinner(winPath1); return; }
+            const winPath2 = checkPath(3);
+            if (winPath2) { highlightWinner(winPath2); return; }
+        }
+
+        function highlightWinner(pathCoords) {
+            const hexes = document.querySelectorAll('.hex');
+            pathCoords.forEach(coord => {
+                const index = coord[0] * 5 + coord[1];
+                hexes[index].classList.add('win-highlight');
+            });
+            celebrate();
+        }
+
+        function checkPath(state) {
+            const hexes = document.querySelectorAll('.hex');
+            const board = Array.from(hexes).map(h => parseInt(h.dataset.state));
+            const matrix = [];
+            for (let i = 0; i < 5; i++) matrix.push(board.slice(i * 5, i * 5 + 5));
+            for (let c = 0; c < 5; c++) if (matrix[0][c] === state) { let p = bfs(matrix, 0, c, state, 'V'); if (p) return p; }
+            for (let r = 0; r < 5; r++) if (matrix[r][4] === state) { let p = bfs(matrix, r, 4, state, 'H'); if (p) return p; }
+            return null;
+        }
+
+        function bfs(matrix, startR, startC, state, type) {
+            let queue = [{r: startR, c: startC, path: [[startR, startC]]}];
+            let visited = new Set([`${startR},${startC}`]);
+            while (queue.length > 0) {
+                let {r, c, path} = queue.shift();
+                if (type === 'V' && r === 4) return path;
+                if (type === 'H' && c === 0) return path;
+                const isEven = r % 2 === 0;
+                const dirs = isEven ? [[-1,0], [-1,1], [0,-1], [0,1], [1,0], [1,1]] : [[-1,-1], [-1,0], [0,-1], [0,1], [1,-1], [1,0]];
+                for (let [dr, dc] of dirs) {
+                    let nR = r + dr, nC = c + dc;
+                    if (nR >= 0 && nR < 5 && nC >= 0 && nC < 5 && matrix[nR][nC] === state && !visited.has(`${nR},${nC}`)) {
+                        visited.add(`${nR},${nC}`);
+                        queue.push({r: nR, c: nC, path: [...path, [nR, nC]]});
+                    }
+                }
+            }
+            return null;
+        }
+
         function login(team) {
-            const name = document.getElementById('username').value;
-            const room = document.getElementById('room-id').value;
-            if(!name || !room) return alert("أكمل البيانات!");
-            socket.emit('registerUser', { name, team, room });
+            let name = document.getElementById('username').value;
+            if(!name) return alert("الرجاء إدخال اسمك!");
+            socket.emit('registerUser', {name, team});
             document.getElementById('login-area').style.display = 'none';
             document.getElementById('game-area').style.display = 'block';
         }
 
         socket.on('updateUserList', (users) => {
-            const mListAdmin = document.getElementById('team-maroon');
-            const oListAdmin = document.getElementById('team-orange');
-            const mListGame = document.getElementById('game-team-maroon');
-            const oListGame = document.getElementById('game-team-orange');
-
-            if(mListAdmin) mListAdmin.innerHTML = ''; 
-            if(oListAdmin) oListAdmin.innerHTML = '';
-            if(mListGame) mListGame.innerHTML = ''; 
-            if(oListGame) oListGame.innerHTML = '';
-
-            for (let id in users) {
+            const mList = document.getElementById('team-maroon');
+            const oList = document.getElementById('team-orange');
+            mList.innerHTML = ''; oList.innerHTML = '';
+            for(let id in users) {
                 let li = document.createElement('li');
                 li.innerText = users[id].name;
-                if (users[id].team === 'الخمري') {
-                    if(mListAdmin) mListAdmin.appendChild(li.cloneNode(true));
-                    if(mListGame) mListGame.appendChild(li.cloneNode(true));
-                } else {
-                    if(oListAdmin) oListAdmin.appendChild(li.cloneNode(true));
-                    if(oListGame) oListGame.appendChild(li.cloneNode(true));
-                }
+                if(users[id].team === 'الخمري') mList.appendChild(li);
+                else oList.appendChild(li);
+            }
+        });
+
+        socket.on('gameReset', () => location.reload());
+
+        socket.on('showBuzzerScreen', () => {
+            if (window.innerWidth <= 768) { 
+                buzzerOverlay.style.display = 'flex';
+                buzzerOverlay.style.backgroundColor = 'white';
+                buzzerOverlay.style.color = 'black';
+                buzzerOverlay.classList.remove('flash-red-active');
+                buzzerOverlay.innerText = 'اضغط!';
+                buzzerOverlay.style.pointerEvents = 'auto';
+            }
+        });
+
+        buzzerOverlay.onclick = function() { socket.emit('pressBuzzer'); };
+
+        socket.on('buzzerWinner', (winnerData) => {
+            clearInterval(countdownInterval);
+            if (socket.id === winnerData.id) {
+                soundInterval = setInterval(() => {
+                    buzzerSound.currentTime = 0;
+                    buzzerSound.play().catch(e => console.error(e));
+                }, 150);
+                buzzerOverlay.classList.add('flash-red-active');
+                buzzerOverlay.innerText = 'أنت الأسرع!';
+            } else {
+                let timeLeft = 10;
+                buzzerOverlay.style.pointerEvents = 'none'; 
+                buzzerOverlay.innerText = timeLeft;
+                countdownInterval = setInterval(() => {
+                    timeLeft -= 1;
+                    if (timeLeft > 0) buzzerOverlay.innerText = timeLeft;
+                    else clearInterval(countdownInterval);
+                }, 1000);
+            }
+        });
+
+        socket.on('buzzerAutoReset', () => {
+            clearInterval(countdownInterval);
+            clearInterval(soundInterval); 
+            buzzerSound.pause();
+            if (window.innerWidth <= 768) {
+                buzzerOverlay.style.display = 'flex';
+                buzzerOverlay.style.backgroundColor = 'white';
+                buzzerOverlay.classList.remove('flash-red-active');
+                buzzerOverlay.innerText = 'اضغط!';
+                buzzerOverlay.style.pointerEvents = 'auto';
             }
         });
     </script>
