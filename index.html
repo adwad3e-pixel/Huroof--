@@ -131,8 +131,10 @@
     <div id="admin-view">
         <h1>🎮 لوحة التحكم</h1>
         <div style="background: #222; padding: 15px; border-radius: 10px; margin-bottom: 20px; border: 1px solid #444;">
-    <label style="display: block; margin-bottom: 10px;">🔑 كود الغرفة (يجب أن يكون نفس الكود عند المتسابقين):</label>
-    <input type="text" id="admin-room-id" class="input-name" style="margin-bottom:0;" placeholder="مثال: game123">
+    <label style="display: block; margin-bottom: 10px; color: #aaa;">🔢 كود الغرفة العشوائي:</label>
+    <input type="text" id="admin-room-id" class="input-name" readonly 
+           style="margin-bottom:0; font-size: 32px; color: #00e676; border-color: #00e676;">
+    <p style="font-size: 12px; color: #666; margin-top: 10px;">أعطِ هذا الرقم للمتسابقين للدخول</p>
 </div>
         <button class="admin-btn btn-start" onclick="startTheGame()">▶️ بدء الجولة (لوحة الحروف)</button>
         <button class="admin-btn btn-reset" onclick="resetGameServer()">🔄 إعادة ضبط النظام</button>
@@ -205,6 +207,25 @@
 
     <script>
         const socket = io();
+        // --- كود توليد الرقم العشوائي ---
+function generateRandomCode() {
+    // المعادلة الحسابية لتوليد 4 أرقام:
+    // $Code = \lfloor 1000 + Random \times 9000 \rfloor$
+    const randomCode = Math.floor(1000 + Math.random() * 9000); 
+    const adminInput = document.getElementById('admin-room-id');
+    if(adminInput) {
+        adminInput.value = randomCode;
+    }
+}
+
+// تشغيل التوليد التلقائي أول ما تفتح الصفحة
+window.addEventListener('load', () => {
+    // إذا كانت الشاشة كبيرة (يعني المتصفح هو المسؤول) ولد كود
+    if (window.innerWidth > 768) {
+        generateRandomCode();
+    }
+});
+// ------------------------------
         const originalLetters = ["أ", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز", "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق", "ك", "ل", "م", "ن"];
         let scoreTeam1 = 0, scoreTeam2 = 0;
         const buzzerOverlay = document.getElementById('buzzer-overlay');
@@ -424,6 +445,7 @@
     </script>
 </body>
 </html>
+
 
 
 
