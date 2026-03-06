@@ -217,6 +217,43 @@
         }
         .flash-red-active { animation: strobe 0.15s infinite; }
         @keyframes strobe { 0% { background-color: red; color: white; } 50% { background-color: white; color: red; } 100% { background-color: red; color: white; } }
+
+        /* ✅ تنسيق الجوال */
+        @media (max-width: 768px) {
+            #admin-view { padding: 10px; }
+            
+            .teams-container { 
+                gap: 10px; 
+                margin-bottom: 15px; 
+            }
+            
+            .team-box { 
+                min-width: 45vw;
+                padding: 15px;
+            }
+            
+            #instructions-container {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .instructions-column {
+                min-width: 100%;
+                padding-right: 10px;
+                border-right: none;
+                border-bottom: 2px solid #00e676;
+                padding-bottom: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .instructions-column h3 {
+                font-size: 1rem;
+            }
+            
+            .instructions-column ul {
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -664,11 +701,18 @@
         });
     </script>
 
-    <!-- ✅ الإعلان -->
-    <div style="text-align: center; margin-top: 20px; padding: 20px;">
+    <!-- ✅ الإعلان - بالابتوب فقط -->
+    <div style="text-align: center; margin-top: 20px; padding: 20px; display: none;" id="ad-container">
         <script async="async" data-cfasync="false" src="https://pl28860934.effectivegatecpm.com/40aed4f94b392b2dfcb93a43676e053d/invoke.js"></script>
         <div id="container-40aed4f94b392b2dfcb93a43676e053d"></div>
     </div>
+
+    <script>
+        // ✅ اعرض الإعلان بالابتوب فقط
+        if (window.innerWidth > 768) {
+            document.getElementById('ad-container').style.display = 'block';
+        }
+    </script>
 
 </body>
 </html>
