@@ -7,8 +7,13 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// هذا السطر يخبر السيرفر أن ملفات الـ HTML موجودة في مجلد اسمه public
 app.use(express.static(path.join(__dirname, 'public')));
 
+// هذا السطر يضمن تشغيل index.html عند فتح الرابط الرئيسي
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 // --- 1. ضعه هنا (خارج الدالة) ---
 let roomUsers = {}; 
 
@@ -58,3 +63,4 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`السيرفر يعمل على المنفذ ${PORT}`);
 });
+
