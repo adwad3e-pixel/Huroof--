@@ -7,7 +7,7 @@
     
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>نظام المسابقات الذكي</title>
+    <title>WordDash / لعبة حروف المجانية</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&family=El+Messiri:wght@700&display=swap" rel="stylesheet">
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -262,9 +262,97 @@
                 font-size: 12px;
             }
         }
+
+        /* ===== WordDash Logo ===== */
+        .worddash-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 28px 20px 16px;
+            user-select: none;
+        }
+
+        .logo-hexagons {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+            align-items: center;
+        }
+
+        .logo-hex {
+            width: 44px;
+            height: 50px;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+            transition: transform 0.2s;
+        }
+
+        .logo-hex:hover {
+            transform: scale(1.12) translateY(-3px);
+        }
+
+        .logo-hex.orange { background: linear-gradient(160deg, #ffd066, #ffa500); }
+        .logo-hex.red    { background: linear-gradient(160deg, #e05070, #c41e3a); }
+
+        .logo-title-group {
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        .logo-title-group .worddash-name {
+            display: block;
+            font-family: 'El Messiri', sans-serif;
+            font-size: clamp(26px, 6vw, 40px);
+            font-weight: 900;
+            background: linear-gradient(90deg, #ffa500, #c41e3a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+        }
+
+        .logo-title-group .worddash-sub {
+            display: block;
+            font-family: 'Cairo', sans-serif;
+            font-size: clamp(13px, 3vw, 18px);
+            color: #bbb;
+            margin-top: 4px;
+            letter-spacing: 1px;
+        }
+
+        .logo-divider {
+            width: 80px;
+            height: 3px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #ffa500, #c41e3a);
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
+
+    <!-- ===== WordDash Logo ===== -->
+    <div class="worddash-logo">
+        <div class="logo-hexagons">
+            <div class="logo-hex orange">W</div>
+            <div class="logo-hex red">D</div>
+            <div class="logo-hex orange">⬡</div>
+            <div class="logo-hex red">⬡</div>
+            <div class="logo-hex orange">⬡</div>
+        </div>
+        <div class="logo-title-group">
+            <span class="worddash-name">WordDash</span>
+            <span class="worddash-sub">لعبة حروف المجانية</span>
+        </div>
+        <div class="logo-divider"></div>
+    </div>
 
     <!-- زر تبديل اللغة -->
     <div class="language-toggle">
