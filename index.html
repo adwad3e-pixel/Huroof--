@@ -147,6 +147,10 @@
             color: #7c4dff;
         }
 
+        .instructions-column p {
+            margin: 8px 0; line-height: 1.8; font-size: 13px;
+        }
+
         /* ✅ الجديد: إخفاء/إظهار الأعمدة */
         .arabic-instructions { display: flex; flex-direction: column; }
         .english-instructions { display: none; }
@@ -254,7 +258,7 @@
                 font-size: 1rem;
             }
             
-            .instructions-column ul {
+            .instructions-column p {
                 font-size: 12px;
             }
         }
@@ -301,24 +305,26 @@
         <div id="instructions-container">
             <!-- العمود العربي -->
             <div class="instructions-column arabic-instructions" style="direction: rtl;">
-                <h3>🎮 كيفية اللعب</h3>
-                <ul>
-                    <li><strong>💻 اللابتوب:</strong> عرض لوحة الحروف</li>
-                    <li><strong>📱 الجوال:</strong> الدخول والانضمام للفريق</li>
-                    <li><strong>⚡ البوزر:</strong> أسرع لاعب 10 ثوانٍ</li>
-                    <li><strong>🏆 الفوز:</strong> خط متصل من الفريق</li>
-                </ul>
+                <div style="text-align: right; line-height: 1.8; font-family: sans-serif;">
+                    <p>🎟️ <strong>1. الانضمام:</strong> ادخل كود الغرفة، اختر فريقك، وأدخل اسمك.</p>
+                    <p>🎯 <strong>2. الهدف:</strong> كوّن مساراً لونياً متصلاً (رأسياً أو أفقياً) لتفوز!</p>
+                    <p>⚡ <strong>3. التحدي:</strong> أول من يضغط الزر له 5 ثوانٍ فقط للإجابة على سؤال يبدأ بالحرف المختار.</p>
+                    <p>🔄 <strong>4. قاعدة "الفتح للجميع":</strong> إذا أخطأ الفريق الأول، يُفتح السؤال فوراً للفريق الخصم!</p>
+                    <p>👑 <strong>5. الامتياز:</strong> الفريق الفائز بالنقطة يختار الحرف التالي.</p>
+                    <p style="color: #d9534f; font-weight: bold; text-align: center; font-size: 1.2em;">🚀 السرعة هي مفتاح الفوز! 🚀</p>
+                </div>
             </div>
 
             <!-- العمود الإنجليزي -->
             <div class="instructions-column english-instructions" style="direction: ltr; border-right: none; border-left: 3px solid #00e676; padding-right: 0; padding-left: 15px; text-align: left;">
-                <h3 style="font-family: sans-serif;">🎮 How to Play</h3>
-                <ul>
-                    <li><strong>💻 Laptop:</strong> Display letter grid</li>
-                    <li><strong>📱 Mobile:</strong> Join and pick team</li>
-                    <li><strong>⚡ Buzzer:</strong> Fastest player 10 sec</li>
-                    <li><strong>🏆 Win:</strong> Connected team line</li>
-                </ul>
+                <div style="text-align: left; line-height: 1.8; font-family: sans-serif;">
+                    <p>🎟️ <strong>1. Join:</strong> Enter the Room Code, select your team, and pick your name.</p>
+                    <p>🎯 <strong>2. Objective:</strong> Form a continuous colored path to win!</p>
+                    <p>⚡ <strong>3. Challenge:</strong> First to buzz has 5 seconds to answer with a word starting with the chosen letter.</p>
+                    <p>🔄 <strong>4. Open Challenge:</strong> If a team misses, <strong>the question opens immediately to the other team!</strong></p>
+                    <p>👑 <strong>5. Bonus:</strong> The winning team gets the point and chooses the next letter.</p>
+                    <p style="color: #d9534f; font-weight: bold; text-align: center; font-size: 1.2em;">🚀 Speed is the key to victory! 🚀</p>
+                </div>
             </div>
         </div>
     </div>
